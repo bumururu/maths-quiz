@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maths Quiz</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #4f6df5 0%, #7b4ff5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 480px;
+    padding: 36px 32px;
+    text-align: center;
+  }
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 10px;
+  }
+  .stat {
+    flex: 1;
+    background: #f3f4fb;
+    border-radius: 14px;
+    padding: 10px 8px;
+  }
+  .stat .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    font-weight: 600;
+  }
+  .stat .value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #4f6df5;
+  }
+  .stat.streak .value { color: #f59e0b; }
+  .question {
+    font-size: 42px;
+    font-weight: 800;
+    color: #1e2235;
+    margin: 18px 0 28px;
+    letter-spacing: 1px;
+    min-height: 56px;
+  }
+  .answer-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  input[type="text"] {
+    width: 160px;
+    font-size: 30px;
+    font-weight: 700;
+    text-align: center;
+    padding: 12px;
+    border: 3px solid #d6daf0;
+    border-radius: 14px;
+    outline: none;
+    color: #1e2235;
+  }
+  input[type="text"]:focus { border-color: #4f6df5; }
+  button {
+    font-size: 18px;
+    font-weight: 700;
+    padding: 12px 26px;
+    border: none;
+    border-radius: 14px;
+    background: #4f6df5;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+  }
+  button:hover { background: #3d58d8; }
+  button:active { transform: scale(0.96); }
+  .feedback {
+    min-height: 32px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .feedback.correct { color: #16a34a; }
+  .feedback.wrong { color: #dc2626; }
+  .attempts {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #999;
+  }
+  .shake { animation: shake 0.4s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-7px); }
+    80% { transform: translateX(7px); }
+  }
+  .pop { animation: pop 0.45s; }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  .card.flash-green { animation: flashGreen 0.7s; }
+  @keyframes flashGreen {
+    0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.7); }
+    100% { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="stats">
+    <div class="stat"><div class="label">Question</div><div class="value" id="qnum">1</div></div>
+    <div class="stat"><div class="label">Score</div><div class="value" id="score">0</div></div>
+    <div class="stat streak"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+  </div>
+  <div class="question" id="question"></div>
+  <div class="answer-row">
+    <input type="text" id="answer" inputmode="numeric" autocomplete="off" autofocus>
+    <button id="check">Check</button>
+  </div>
+  <div class="feedback" id="feedback"></div>
+  <div class="attempts" id="attempts"></div>
+</div>
+
+<script>
+(function () {
+  var qnumEl = document.getElementById('qnum');
+  var scoreEl = document.getElementById('score');
+  var streakEl = document.getElementById('streak');
+  var questionEl = document.getElementById('question');
+  var answerEl = document.getElementById('answer');
+  var checkBtn = document.getElementById('check');
+  var feedbackEl = document.getElementById('feedback');
+  var attemptsEl = document.getElementById('attempts');
+  var card = document.getElementById('card');
+
+  var qnum = 1, score = 0, streak = 0, attempts = 0;
+  var current = null;
+  var locked = false;
+
+  var praise = ['Correct!', 'Nice one!', 'Spot on!', 'Brilliant!', 'You got it!', 'Well done!'];
+  var nudge = ['Not quite — try again', 'Close, have another go', 'Try again', 'Check it once more'];
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+
+  // Generate first pair: returns [a, b, result] with a,b in 2..49, result a positive whole number
+  function genPair(op) {
+    var a, b;
+    if (op === '+') {
+      a = randInt(2, 49); b = randInt(2, 49);
+      return [a, b, a + b];
+    }
+    if (op === '−') {
+      a = randInt(5, 49); b = randInt(2, a - 1);
+      return [a, b, a - b];
+    }
+    if (op === '×') {
+      a = randInt(2, 12); b = randInt(2, 12);
+      return [a, b, a * b];
+    }
+    // division: exact, both numbers < 50
+    var d = randInt(2, 12);
+    var q = randInt(2, Math.floor(49 / d));
+    if (q < 2) return null;
+    return [q * d, d, q];
+  }
+
+  // Apply second operation to running result r with new number c (< 50)
+  function genSecond(r, op) {
+    var c;
+    if (op === '+') {
+      c = randInt(2, 49);
+      return [c, r + c];
+    }
+    if (op === '−') {
+      if (r < 4) return null;
+      c = randInt(2, Math.min(49, r - 1));
+      return [c, r - c];
+    }
+    if (op === '×') {
+      if (r > 25) return null;          // keep it mental-maths sized
+      c = randInt(2, r > 12 ? 6 : 12);
+      if (r * c > 200) return null;
+      return [c, r * c];
+    }
+    // division: c must divide r exactly, quotient >= 2
+    var divisors = [];
+    for (var i = 2; i <= 12; i++) {
+      if (r % i === 0 && r / i >= 2) divisors.push(i);
+    }
+    if (!divisors.length) return null;
+    c = pick(divisors);
+    return [c, r / c];
+  }
+
+  function genQuestion() {
+    var ops = ['+', '−', '×', '÷'];
+    for (var t = 0; t < 300; t++) {
+      var op1 = pick(ops);
+      var pair = genPair(op1);
+      if (!pair) continue;
+      var a = pair[0], b = pair[1], r1 = pair[2];
+
+      if (Math.random() < 0.45) {
+        return { text: a + ' ' + op1 + ' ' + b, answer: r1 };
+      }
+
+      var op2 = pick(ops);
+      var step = genSecond(r1, op2);
+      if (!step) continue;
+      var c = step[0], r2 = step[1];
+
+      // Brackets when left-to-right order would break BODMAS
+      var needBrackets = (op2 === '×' || op2 === '÷') && (op1 === '+' || op1 === '−');
+      var text = needBrackets
+        ? '(' + a + ' ' + op1 + ' ' + b + ') ' + op2 + ' ' + c
+        : a + ' ' + op1 + ' ' + b + ' ' + op2 + ' ' + c;
+      return { text: text, answer: r2 };
+    }
+    // Fallback (never expected): simple addition
+    var x = randInt(2, 49), y = randInt(2, 49);
+    return { text: x + ' + ' + y, answer: x + y };
+  }
+
+  function nextQuestion() {
+    current = genQuestion();
+    attempts = 0;
+    locked = false;
+    qnumEl.textContent = qnum;
+    questionEl.textContent = current.text + ' = ?';
+    answerEl.value = '';
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+    attemptsEl.textContent = '';
+    answerEl.focus();
+  }
+
+  function check() {
+    if (locked) return;
+    var raw = answerEl.value.trim();
+    if (raw === '' || isNaN(Number(raw))) {
+      answerEl.classList.remove('shake');
+      void answerEl.offsetWidth;
+      answerEl.classList.add('shake');
+      return;
+    }
+    var val = Number(raw);
+    if (val === current.answer) {
+      locked = true;
+      score++;
+      if (attempts === 0) {
+        streak++;
+        streakEl.classList.remove('pop');
+        void streakEl.offsetWidth;
+        streakEl.classList.add('pop');
+      }
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+      feedbackEl.textContent = pick(praise) + (attempts === 0 ? ' First try!' : '');
+      feedbackEl.className = 'feedback correct';
+      card.classList.remove('flash-green');
+      void card.offsetWidth;
+      card.classList.add('flash-green');
+      qnum++;
+      setTimeout(nextQuestion, 1200);
+    } else {
+      attempts++;
+      if (attempts === 1) {
+        streak = 0;
+        streakEl.textContent = streak;
+      }
+      feedbackEl.textContent = pick(nudge);
+      feedbackEl.className = 'feedback wrong';
+      attemptsEl.textContent = 'Attempts: ' + attempts;
+      answerEl.classList.remove('shake');
+      void answerEl.offsetWidth;
+      answerEl.classList.add('shake');
+      answerEl.select();
+    }
+  }
+
+  checkBtn.addEventListener('click', check);
+  answerEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') check();
+  });
+
+  nextQuestion();
+})();
+</script>
+</body>
+</html>
