@@ -27,7 +27,7 @@
   .stats {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 28px;
+    margin-bottom: 12px;
     gap: 10px;
   }
   .stat {
@@ -49,6 +49,13 @@
     color: #4f6df5;
   }
   .stat.streak .value { color: #f59e0b; }
+  .bests {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .bests .stat { background: #fbf6ec; }
+  .best-streak .value { color: #f59e0b; }
   .question {
     font-size: 42px;
     font-weight: 800;
@@ -128,6 +135,10 @@
     <div class="stat"><div class="label">Score</div><div class="value" id="score">0</div></div>
     <div class="stat streak"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
   </div>
+  <div class="bests">
+    <div class="stat best"><div class="label">Best Score</div><div class="value" id="bestScore">0</div></div>
+    <div class="stat best-streak"><div class="label">Best Streak</div><div class="value" id="bestStreak">0</div></div>
+  </div>
   <div class="question" id="question"></div>
   <div class="answer-row">
     <input type="text" id="answer" inputmode="numeric" autocomplete="off" autofocus>
@@ -148,10 +159,37 @@
   var feedbackEl = document.getElementById('feedback');
   var attemptsEl = document.getElementById('attempts');
   var card = document.getElementById('card');
+  var bestScoreEl = document.getElementById('bestScore');
+  var bestStreakEl = document.getElementById('bestStreak');
 
   var qnum = 1, score = 0, streak = 0, attempts = 0;
   var current = null;
   var locked = false;
+
+  // --- persistent personal bests (saved in this browser) ---
+  var BEST_SCORE_KEY = 'mathsQuizBestScore';
+  var BEST_STREAK_KEY = 'mathsQuizBestStreak';
+
+  function loadBest(key) {
+    try {
+      var v = parseInt(localStorage.getItem(key), 10);
+      return isNaN(v) ? 0 : v;
+    } catch (e) { return 0; }   // private mode / storage blocked: just don't persist
+  }
+  function saveBest(key, val) {
+    try { localStorage.setItem(key, String(val)); } catch (e) {}
+  }
+
+  var bestScore = loadBest(BEST_SCORE_KEY);
+  var bestStreak = loadBest(BEST_STREAK_KEY);
+  bestScoreEl.textContent = bestScore;
+  bestStreakEl.textContent = bestStreak;
+
+  function popEl(el) {
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+  }
 
   var praise = ['Correct!', 'Nice one!', 'Spot on!', 'Brilliant!', 'You got it!', 'Well done!'];
   var nudge = ['Not quite — try again', 'Close, have another go', 'Try again', 'Check it once more'];
@@ -268,13 +306,30 @@
       score++;
       if (attempts === 0) {
         streak++;
-        streakEl.classList.remove('pop');
-        void streakEl.offsetWidth;
-        streakEl.classList.add('pop');
+        popEl(streakEl);
       }
       scoreEl.textContent = score;
       streakEl.textContent = streak;
-      feedbackEl.textContent = pick(praise) + (attempts === 0 ? ' First try!' : '');
+
+      // update persistent personal bests
+      var newBestStreak = false;
+      if (score > bestScore) {
+        bestScore = score;
+        saveBest(BEST_SCORE_KEY, bestScore);
+        bestScoreEl.textContent = bestScore;
+        popEl(bestScoreEl);
+      }
+      if (streak > bestStreak) {
+        newBestStreak = bestStreak >= 1;   // only celebrate beating a genuine prior record
+        bestStreak = streak;
+        saveBest(BEST_STREAK_KEY, bestStreak);
+        bestStreakEl.textContent = bestStreak;
+        popEl(bestStreakEl);
+      }
+
+      var msg = pick(praise) + (attempts === 0 ? ' First try!' : '');
+      if (newBestStreak) msg += ' 🏆 New best!';
+      feedbackEl.textContent = msg;
       feedbackEl.className = 'feedback correct';
       card.classList.remove('flash-green');
       void card.offsetWidth;
