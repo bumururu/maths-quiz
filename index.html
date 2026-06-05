@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maths Quiz</title>
@@ -51,10 +51,11 @@
   .stat.streak .value { color: #f59e0b; }
   .bests {
     display: flex;
+    justify-content: center;
     gap: 10px;
     margin-bottom: 28px;
   }
-  .bests .stat { background: #fbf6ec; }
+  .bests .stat { background: #fbf6ec; flex: 0 1 200px; }
   .best-streak .value { color: #f59e0b; }
   .question {
     font-size: 42px;
@@ -136,7 +137,6 @@
     <div class="stat streak"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
   </div>
   <div class="bests">
-    <div class="stat best"><div class="label">Best Score</div><div class="value" id="bestScore">0</div></div>
     <div class="stat best-streak"><div class="label">Best Streak</div><div class="value" id="bestStreak">0</div></div>
   </div>
   <div class="question" id="question"></div>
@@ -159,15 +159,13 @@
   var feedbackEl = document.getElementById('feedback');
   var attemptsEl = document.getElementById('attempts');
   var card = document.getElementById('card');
-  var bestScoreEl = document.getElementById('bestScore');
   var bestStreakEl = document.getElementById('bestStreak');
 
   var qnum = 1, score = 0, streak = 0, attempts = 0;
   var current = null;
   var locked = false;
 
-  // --- persistent personal bests (saved in this browser) ---
-  var BEST_SCORE_KEY = 'mathsQuizBestScore';
+  // --- persistent best streak (saved in this browser) ---
   var BEST_STREAK_KEY = 'mathsQuizBestStreak';
 
   function loadBest(key) {
@@ -180,9 +178,7 @@
     try { localStorage.setItem(key, String(val)); } catch (e) {}
   }
 
-  var bestScore = loadBest(BEST_SCORE_KEY);
   var bestStreak = loadBest(BEST_STREAK_KEY);
-  bestScoreEl.textContent = bestScore;
   bestStreakEl.textContent = bestStreak;
 
   function popEl(el) {
@@ -311,14 +307,8 @@
       scoreEl.textContent = score;
       streakEl.textContent = streak;
 
-      // update persistent personal bests
+      // update persistent best streak
       var newBestStreak = false;
-      if (score > bestScore) {
-        bestScore = score;
-        saveBest(BEST_SCORE_KEY, bestScore);
-        bestScoreEl.textContent = bestScore;
-        popEl(bestScoreEl);
-      }
       if (streak > bestStreak) {
         newBestStreak = bestStreak >= 1;   // only celebrate beating a genuine prior record
         bestStreak = streak;
