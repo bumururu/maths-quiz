@@ -193,6 +193,70 @@
   .mini-ans:active { transform: scale(0.96); }
   .mini-ans.right { background: #36884d; border-color: #36884d; color: #fff; }
   .mini-ans.wrongpick { background: #e3928b; border-color: #e3928b; color: #fff; }
+
+  /* ---------- Daily Challenge, players, stickers ---------- */
+  .gold-btn {
+    font-family: 'Chango', 'Bree Serif', serif;
+    font-size: 17px;
+    background: #d3b465;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 20px 13px;
+    cursor: pointer;
+    box-shadow: #9c7f3c 0 5px 0 0;
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+  }
+  .gold-btn:hover { background: #ddc078; }
+  .gold-btn:active { transform: translateY(4px); box-shadow: #9c7f3c 0 1px 0 0; }
+  .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+  .meta-row { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  .meta-btn {
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    color: #36884d;
+    background: #eef5fc;
+    border: 2px solid #d7e3f0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .meta-btn:hover { border-color: #89cff0; }
+  .sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 14px; }
+  .sticker { background: #eef5fc; border-radius: 14px; padding: 10px 6px; }
+  .sticker .face {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    background: #d0ecff;
+  }
+  .sticker.locked .face { background: #c3cdd8; color: #fff; font-family: 'Chango', 'Bree Serif', serif; font-size: 26px; }
+  .sticker .s-name { font-family: 'Nunito', system-ui, sans-serif; font-size: 12px; font-weight: 800; color: #36884d; }
+  .sticker .s-hint { font-family: 'Nunito', system-ui, sans-serif; font-size: 10px; color: #5b7c99; font-weight: 700; margin-top: 2px; }
+  #stickerToast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(90px);
+    background: #36884d;
+    color: #fff;
+    font-family: 'Chango', 'Bree Serif', serif;
+    font-size: 16px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+  #stickerToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .start-btn {
     display: inline-flex;
     align-items: center;
@@ -579,8 +643,11 @@
     .check-title { font-size: 19px; }
     .mini-ans { font-size: 19px; padding: 10px 6px; }
     .blue-btn { font-size: 15px; }
+    .gold-btn { font-size: 15px; }
     .game-btn { font-size: 13px; padding: 9px 11px; }
     .tipbox li { font-size: 12px; }
+    .sticker .face { width: 44px; height: 44px; font-size: 24px; }
+    .sticker .s-hint { font-size: 9px; }
     .card { padding: 18px 16px; border-radius: 18px; }
     .stats { margin-bottom: 8px; gap: 8px; }
     .stat { padding: 7px 6px; border-radius: 11px; }
@@ -690,7 +757,15 @@
       <span>Start Quiz</span>
     </button>
     <div>
-      <button class="blue-btn" id="checkBtnStart" type="button">Let's Check!</button>
+      <button class="gold-btn" id="dailyBtn" type="button">Monty's Daily Challenge</button>
+    </div>
+    <div class="btn-row">
+      <button class="blue-btn small" id="checkBtnStart" type="button">Let's Check!</button>
+      <button class="blue-btn small" id="stickersBtn" type="button">My Stickers</button>
+    </div>
+    <div class="meta-row">
+      <button class="meta-btn" id="playerBtn" type="button"></button>
+      <button class="meta-btn" id="soundBtn" type="button"></button>
     </div>
   </div>
 
@@ -751,6 +826,44 @@
     <div class="check-actions hidden" id="miniEnd">
       <button class="blue-btn" id="miniAgain" type="button">Play Again</button>
       <button class="back-btn" id="miniBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Who's playing screen -->
+  <div id="playersView" class="hidden">
+    <h2 class="check-title">Who's playing?</h2>
+    <div class="game-row" id="playerList"></div>
+    <div class="answer-row">
+      <input type="text" id="newPlayerName" maxlength="14" placeholder="Add a name...">
+      <button class="check-btn" id="addPlayerBtn" type="button">Add</button>
+    </div>
+    <div class="check-actions">
+      <button class="back-btn" id="playersBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Daily Challenge screen -->
+  <div id="dailyView" class="hidden">
+    <h2 class="check-title">Monty's Daily Challenge</h2>
+    <div class="mini-progress" id="dailyProgress"></div>
+    <div class="question" id="dailyQuestion"></div>
+    <div class="answer-row" id="dailyRow">
+      <input type="text" id="dailyInput" inputmode="numeric" autocomplete="off">
+      <button class="check-btn" id="dailyGo" type="button">Go</button>
+    </div>
+    <div class="feedback correct" id="dailyFeedback"></div>
+    <div class="check-actions">
+      <button class="back-btn" id="dailyBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Sticker book screen -->
+  <div id="stickersView" class="hidden">
+    <h2 class="check-title">My Stickers</h2>
+    <div class="mini-progress" id="stickerCount"></div>
+    <div class="sticker-grid" id="stickerGrid"></div>
+    <div class="check-actions">
+      <button class="back-btn" id="stickersBack" type="button">Back</button>
     </div>
   </div>
 </div>
@@ -838,6 +951,7 @@
   <div class="m-honour">You're on a roll!</div>
   <div class="m-points" id="mPoints">10 in a row!</div>
 </div>
+<div id="stickerToast"></div>
 
 <script>
 (function () {
@@ -873,7 +987,33 @@
     try { localStorage.setItem(key, String(val)); } catch (e) {}
   }
 
-  var bestStreak = loadBest(BEST_STREAK_KEY);
+  // --- player profiles: every saved value below is namespaced per player ---
+  var PLAYERS_KEY = 'mathsQuizPlayers';
+  var CUR_PLAYER_KEY = 'mathsQuizCurrentPlayer';
+  var players = loadJSON(PLAYERS_KEY, []);
+  var player = loadJSON(CUR_PLAYER_KEY, null);
+  if (!players.length) {
+    players = ['Player 1'];
+    saveJSON(PLAYERS_KEY, players);
+  }
+  if (!player || players.indexOf(player) < 0) {
+    player = players[0];
+    saveJSON(CUR_PLAYER_KEY, player);
+  }
+  function pfx(key) { return 'mq|' + player + '|' + key; }
+  // one-time migration of pre-profile data into the first player
+  ['mathsQuizBestStreak', 'mathsQuizOps', 'mathsQuizLevel', 'mathsQuizHistory', 'mathsQuizFacts', 'mathsQuizBests'].forEach(function (k) {
+    try {
+      var legacy = localStorage.getItem(k);
+      if (legacy !== null && localStorage.getItem(pfx(k)) === null) {
+        localStorage.setItem(pfx(k), legacy);
+      }
+      if (legacy !== null) localStorage.removeItem(k);
+    } catch (e) {}
+  });
+  try { localStorage.removeItem('mathsQuizClockBest'); } catch (e) {}
+
+  var bestStreak = loadBest(pfx(BEST_STREAK_KEY));
   bestStreakEl.textContent = bestStreak;
 
   // --- difficulty levels + operator toggles ---
@@ -896,11 +1036,11 @@
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
   }
 
-  var enabledOps = loadJSON(OPS_KEY, null);
+  var enabledOps = loadJSON(pfx(OPS_KEY), null);
   if (!enabledOps || !OP_ORDER.some(function (o) { return enabledOps[o]; })) {
     enabledOps = { '+': true, '−': true, '×': true, '÷': true };
   }
-  var level = loadJSON(LEVEL_KEY, 'medium');
+  var level = loadJSON(pfx(LEVEL_KEY), 'medium');
   if (!LEVELS[level]) level = 'medium';
 
   function activeOps() {
@@ -924,7 +1064,7 @@
       return;
     }
     enabledOps[op] = !enabledOps[op];
-    saveJSON(OPS_KEY, enabledOps);
+    saveJSON(pfx(OPS_KEY), enabledOps);
     refreshChips();
   }
   Array.prototype.forEach.call(opChips, function (chip) {
@@ -944,7 +1084,7 @@
   Array.prototype.forEach.call(levelBtns, function (btn) {
     btn.addEventListener('click', function () {
       level = btn.getAttribute('data-level');
-      saveJSON(LEVEL_KEY, level);
+      saveJSON(pfx(LEVEL_KEY), level);
       refreshLevels();
     });
   });
@@ -1146,8 +1286,9 @@
   var praise = ['Correct!', 'Nice one!', 'Spot on!', 'Brilliant!', 'You got it!', 'Well done!'];
   var nudge = ['Not quite — try again', 'Close, have another go', 'Try again', 'Check it once more'];
 
+  var rng = Math.random;   // swapped for a date-seeded generator during the Daily Challenge
   function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(rng() * (max - min + 1)) + min;
   }
   function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
 
@@ -1209,7 +1350,7 @@
       if (!pair) continue;
       var a = pair[0], b = pair[1], r1 = pair[2];
 
-      if (Math.random() < L.singleProb) {
+      if (rng() < L.singleProb) {
         return { text: a + ' ' + op1 + ' ' + b, answer: r1, ops: [op1] };
       }
 
@@ -1275,12 +1416,14 @@
       if (streak > bestStreak) {
         newBestStreak = bestStreak >= 1;   // only celebrate beating a genuine prior record
         bestStreak = streak;
-        saveBest(BEST_STREAK_KEY, bestStreak);
+        saveBest(pfx(BEST_STREAK_KEY), bestStreak);
         bestStreakEl.textContent = bestStreak;
         popEl(bestStreakEl);
       }
 
-      var msg = pick(praise) + (attempts === 0 ? ' First try!' : '') + fasterNote;
+      var base = pick(praise);
+      if (Math.random() < 0.35) base = base.replace('!', ', ' + player + '!');
+      var msg = base + (attempts === 0 ? ' First try!' : '') + fasterNote;
       if (newBestStreak) msg += ' 🏆 New best!';
       feedbackEl.textContent = msg;
       feedbackEl.className = 'feedback correct';
@@ -1288,6 +1431,7 @@
       void card.offsetWidth;
       card.classList.add('flash-green');
       var monty = attempts === 0 && streak > 0 && streak % 10 === 0;
+      sfx(monty || newBestStreak ? 'fanfare' : 'right');
       celebrate();
       if (monty) montyParty(streak);
       else if (newBestStreak) pandaDance();
@@ -1305,6 +1449,7 @@
       }
       feedbackEl.textContent = pick(nudge);
       feedbackEl.className = 'feedback wrong';
+      sfx('wrong');
       sadMoment();
       attemptsEl.textContent = 'Attempts: ' + attempts;
       answerEl.classList.remove('shake');
@@ -1312,6 +1457,7 @@
       answerEl.classList.add('shake');
       answerEl.select();
     }
+    checkStickers();
   }
 
   startBtn.addEventListener('click', function () {
@@ -1333,8 +1479,8 @@
   // Facts: per exact question [tries, rights, firstMs, lastMs, bestMs]
   var HIST_KEY = 'mathsQuizHistory';
   var FACTS_KEY = 'mathsQuizFacts';
-  var history = loadJSON(HIST_KEY, {});
-  var facts = loadJSON(FACTS_KEY, { map: {}, order: [] });
+  var history = loadJSON(pfx(HIST_KEY), {});
+  var facts = loadJSON(pfx(FACTS_KEY), { map: {}, order: [] });
   if (!facts.map) facts = { map: {}, order: [] };
 
   var OP_COLORS = { '+': '#0075d4', '−': '#07468b', '×': '#36884d', '÷': '#1b2435' };
@@ -1371,7 +1517,7 @@
       day[op] = cell;
     });
     history[k] = day;
-    saveJSON(HIST_KEY, history);
+    saveJSON(pfx(HIST_KEY), history);
   }
   // returns true when answered right AND faster than the previous correct time
   function recordFact(text, answer, right, ms) {
@@ -1393,7 +1539,7 @@
       f[3] = ms;
       f[4] = f[4] ? Math.min(f[4], ms) : ms;
     }
-    saveJSON(FACTS_KEY, facts);
+    saveJSON(pfx(FACTS_KEY), facts);
     return !!(right && prevLast && ms < prevLast);
   }
   function opTotals() {
@@ -1533,7 +1679,7 @@
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, graphView, miniView].forEach(function (el) { el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, stickersView].forEach(function (el) { el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -1610,7 +1756,7 @@
   var game = { type: 'pop', op: '×', round: 0, score: 0, total: 10, answer: 0, locked: false };
   var clockTimer = null, clockEndAt = 0;
   var BESTS_KEY = 'mathsQuizBests';   // best score per game type + operation
-  var bests = loadJSON(BESTS_KEY, {});
+  var bests = loadJSON(pfx(BESTS_KEY), {});
   function bestKey() { return game.type + '|' + game.op; }
 
   function shuffleArr(arr) {
@@ -1726,11 +1872,13 @@
       btn.classList.add('right');
       game.score++;
       miniFeedback.textContent = pick(praise);
+      sfx('right');
       celebrate();
       setTimeout(nextRound, 800);
     } else {
       btn.classList.add('wrongpick');
       markRight();
+      sfx('wrong');
       miniFeedback.textContent = 'It was ' + game.answer + ' — keep going!';
       setTimeout(nextRound, 1400);
     }
@@ -1742,11 +1890,13 @@
       btn.classList.add('right');
       game.score++;
       miniFeedback.textContent = pick(praise);
+      sfx('right');
       celebrate();
       setTimeout(nextRound, 700);
     } else {
       btn.classList.add('wrongpick');
       markRight();
+      sfx('wrong');
       miniFeedback.textContent = 'It really makes ' + realAns + '!';
       setTimeout(nextRound, 1400);
     }
@@ -1775,9 +1925,11 @@
     if (Number(raw) === game.answer) {
       game.score++;
       popEl(miniQuestion);
+      sfx('right');
       miniFeedback.textContent = '';
     } else {
       miniFeedback.textContent = 'It was ' + game.answer + '!';
+      sfx('wrong');
       miniInput.classList.remove('shake');
       void miniInput.offsetWidth;
       miniInput.classList.add('shake');
@@ -1796,7 +1948,7 @@
     var newBest = game.score > 0 && game.score > prevBest;
     if (newBest) {
       bests[bestKey()] = game.score;
-      saveJSON(BESTS_KEY, bests);
+      saveJSON(pfx(BESTS_KEY), bests);
     }
     if (game.type === 'clock') {
       miniProgress.textContent = 'Time’s up!';
@@ -1820,7 +1972,8 @@
     }
     miniFeedback.textContent = msg;
     miniEnd.classList.remove('hidden');
-    if (great) pandaDance();
+    if (great) { sfx('fanfare'); pandaDance(); } else { sfx('end'); }
+    checkStickers();
     fitToViewport();
   }
   document.getElementById('miniAgain').addEventListener('click', function () { startGame(game.type, game.op); });
@@ -1829,6 +1982,291 @@
     renderGraph();
     showView(graphView);
   });
+
+  // ===================== Sounds (synthesised, no files) =====================
+  var SOUND_KEY = 'mathsQuizSound';
+  var soundOn = loadJSON(SOUND_KEY, true) !== false;
+  var actx = null;
+  function tone(freq, at, dur, type, vol) {
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.linearRampToValueAtTime(vol || 0.15, at + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g);
+    g.connect(actx.destination);
+    o.start(at);
+    o.stop(at + dur + 0.05);
+  }
+  function sfx(name) {
+    if (!soundOn) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) { return; }
+    var t = actx.currentTime + 0.02, i;
+    if (name === 'right') { tone(523, t, 0.1, 'sine', 0.18); tone(784, t + 0.09, 0.16, 'sine', 0.18); }
+    else if (name === 'wrong') { tone(311, t, 0.16, 'triangle', 0.14); tone(233, t + 0.14, 0.28, 'triangle', 0.14); }
+    else if (name === 'fanfare') { var f1 = [523, 659, 784, 1047]; for (i = 0; i < f1.length; i++) tone(f1[i], t + i * 0.1, 0.18, 'square', 0.07); }
+    else if (name === 'best') { var f2 = [659, 831, 988, 1319, 1568]; for (i = 0; i < f2.length; i++) tone(f2[i], t + i * 0.07, 0.14, 'sine', 0.14); }
+    else if (name === 'end') { tone(659, t, 0.12, 'sine', 0.15); tone(523, t + 0.12, 0.2, 'sine', 0.15); }
+  }
+
+  // ===================== Who's playing =====================
+  var playersView = document.getElementById('playersView');
+  var playerBtn = document.getElementById('playerBtn');
+  var soundBtn = document.getElementById('soundBtn');
+  function refreshMeta() {
+    playerBtn.textContent = 'Playing: ' + player;
+    soundBtn.textContent = soundOn ? 'Sound: On' : 'Sound: Off';
+  }
+  refreshMeta();
+  soundBtn.addEventListener('click', function () {
+    soundOn = !soundOn;
+    saveJSON(SOUND_KEY, soundOn);
+    refreshMeta();
+    sfx('right');
+  });
+  function renderPlayers() {
+    var list = document.getElementById('playerList');
+    list.innerHTML = '';
+    players.forEach(function (name) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'game-btn';
+      var s = document.createElement('span');
+      s.textContent = name;
+      b.appendChild(s);
+      if (name === player) {
+        var pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.textContent = 'You';
+        b.appendChild(pill);
+      }
+      b.addEventListener('click', function () {
+        saveJSON(CUR_PLAYER_KEY, name);
+        location.reload();
+      });
+      list.appendChild(b);
+    });
+  }
+  playerBtn.addEventListener('click', function () { renderPlayers(); showView(playersView); });
+  document.getElementById('playersBack').addEventListener('click', function () { showView(startView); });
+  document.getElementById('addPlayerBtn').addEventListener('click', function () {
+    var inp = document.getElementById('newPlayerName');
+    var name = inp.value.trim().slice(0, 14);
+    if (!name || players.indexOf(name) >= 0) {
+      inp.classList.remove('shake');
+      void inp.offsetWidth;
+      inp.classList.add('shake');
+      return;
+    }
+    players.push(name);
+    saveJSON(PLAYERS_KEY, players);
+    saveJSON(CUR_PLAYER_KEY, name);
+    location.reload();
+  });
+
+  // ===================== Monty's Daily Challenge =====================
+  // Seeded by the date: every player in the world gets the SAME 10 questions today.
+  var DAILY_KEY = 'mathsQuizDaily';
+  var dailyView = document.getElementById('dailyView');
+  var dailyProgress = document.getElementById('dailyProgress');
+  var dailyQuestionEl = document.getElementById('dailyQuestion');
+  var dailyInput = document.getElementById('dailyInput');
+  var dailyRow = document.getElementById('dailyRow');
+  var dailyFeedback = document.getElementById('dailyFeedback');
+  var daily = { qs: [], idx: 0, score: 0, active: false, waiting: false };
+
+  function seededRng(str) {
+    var h = 1779033703 ^ str.length;
+    for (var i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function () {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      h ^= h >>> 16;
+      return (h >>> 0) / 4294967296;
+    };
+  }
+  function dailyQuestions() {
+    var saveRng = rng, saveLevel = level, saveOps = enabledOps;
+    rng = seededRng('monty-' + todayKey());
+    level = 'medium';
+    enabledOps = { '+': true, '−': true, '×': true, '÷': true };
+    var qs = [], seen = {}, guard = 0;
+    while (qs.length < 10 && guard++ < 500) {
+      var q = genQuestion();
+      if (!seen[q.text]) { seen[q.text] = 1; qs.push(q); }
+    }
+    rng = saveRng; level = saveLevel; enabledOps = saveOps;
+    return qs;
+  }
+  function openDaily() {
+    var rec = loadJSON(pfx(DAILY_KEY), null);
+    showView(dailyView);
+    if (rec && rec.date === todayKey()) {
+      daily.active = false;
+      dailyRow.classList.add('hidden');
+      dailyProgress.textContent = 'Done for today!';
+      dailyQuestionEl.textContent = rec.score + ' / 10';
+      dailyFeedback.textContent = 'Come back tomorrow for 10 new questions!';
+      return;
+    }
+    daily.qs = dailyQuestions();
+    daily.idx = 0; daily.score = 0; daily.active = true; daily.waiting = false;
+    dailyRow.classList.remove('hidden');
+    nextDaily();
+  }
+  function nextDaily() {
+    daily.waiting = false;
+    if (daily.idx >= 10) { endDaily(); return; }
+    dailyProgress.textContent = 'Question ' + (daily.idx + 1) + ' of 10 · Score ' + daily.score;
+    dailyQuestionEl.textContent = daily.qs[daily.idx].text + ' = ?';
+    dailyInput.value = '';
+    dailyFeedback.textContent = '';
+    dailyInput.focus();
+    qStart = Date.now();
+    fitToViewport();
+  }
+  function dailyAnswer() {
+    if (!daily.active || daily.waiting) return;
+    var raw = dailyInput.value.trim();
+    if (raw === '' || isNaN(Number(raw))) return;
+    var q = daily.qs[daily.idx];
+    var elapsed = Date.now() - qStart;
+    var right = Number(raw) === q.answer;
+    recordResult(q.ops, right, elapsed);
+    recordFact(q.text, q.answer, right, elapsed);
+    daily.waiting = true;
+    if (right) {
+      daily.score++;
+      sfx('right');
+      celebrate();
+      dailyFeedback.textContent = pick(praise);
+    } else {
+      sfx('wrong');
+      dailyFeedback.textContent = 'It was ' + q.answer + '!';
+    }
+    daily.idx++;
+    setTimeout(nextDaily, right ? 800 : 1400);
+  }
+  function endDaily() {
+    daily.active = false;
+    var rec = loadJSON(pfx(DAILY_KEY), null);
+    var dBest = Math.max(daily.score, rec && rec.best ? rec.best : 0);
+    saveJSON(pfx(DAILY_KEY), { date: todayKey(), score: daily.score, best: dBest });
+    dailyRow.classList.add('hidden');
+    dailyProgress.textContent = 'All done!';
+    dailyQuestionEl.textContent = daily.score + ' / 10';
+    dailyFeedback.textContent = (daily.score >= 8 ? 'Brilliant! ' : '') + 'Everyone gets the same 10 questions today — compare with your friends!';
+    if (daily.score >= 8) { sfx('fanfare'); pandaDance(); } else { sfx('end'); }
+    checkStickers();
+  }
+  document.getElementById('dailyBtn').addEventListener('click', openDaily);
+  document.getElementById('dailyGo').addEventListener('click', dailyAnswer);
+  dailyInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') dailyAnswer(); });
+  dailyInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
+  document.getElementById('dailyBack').addEventListener('click', function () { showView(startView); });
+
+  // ===================== My Stickers =====================
+  var STICKERS_KEY = 'mathsQuizStickers';
+  var earnedStickers = loadJSON(pfx(STICKERS_KEY), {});
+  var stickersView = document.getElementById('stickersView');
+  var STICKER_DEFS = [
+    { id: 'first', name: 'First Steps', emoji: '🐾', hint: 'Answer your first quiz question', cond: function (s) { return s.total >= 1; } },
+    { id: 'streak10', name: 'Top Hat Ten', emoji: '🎩', hint: 'Get 10 right in a row', cond: function (s) { return s.bestStreak >= 10; } },
+    { id: 'streak20', name: 'On Fire', emoji: '🔥', hint: 'Get 20 right in a row', cond: function (s) { return s.bestStreak >= 20; } },
+    { id: 'fifty', name: 'Fifty Club', emoji: '🐼', hint: 'Answer 50 questions', cond: function (s) { return s.total >= 50; } },
+    { id: 'hundred', name: 'Century Panda', emoji: '💯', hint: 'Answer 100 questions', cond: function (s) { return s.total >= 100; } },
+    { id: 'sharp', name: 'Sharpshooter', emoji: '🎯', hint: '90% right in one day (10+ answers)', cond: function (s) { return s.sharpDay; } },
+    { id: 'speedy', name: 'Speedy Bamboo', emoji: '⚡', hint: 'Score 12 in Beat the Clock', cond: function (s) { return s.clockBest >= 12; } },
+    { id: 'popstar', name: 'Pop Star', emoji: '🌟', hint: 'Get 10/10 in Pop Quiz', cond: function (s) { return s.popBest >= 10; } },
+    { id: 'truth', name: 'Fib Finder', emoji: '🕵️', hint: 'Get 12/12 in True or False', cond: function (s) { return s.tofBest >= 12; } },
+    { id: 'perfect', name: 'Perfect Day', emoji: '👑', hint: '10/10 on the Daily Challenge', cond: function (s) { return s.dailyBest >= 10; } },
+    { id: 'threedays', name: 'Habit Hero', emoji: '📅', hint: 'Play on 3 different days', cond: function (s) { return s.days >= 3; } },
+    { id: 'mixmaster', name: 'Mix Master', emoji: '🌈', hint: 'Try all four operations', cond: function (s) { return s.allOps; } }
+  ];
+  function stickerStats() {
+    var s = opTotals();
+    var total = 0, allOps = true;
+    OP_ORDER.forEach(function (o) { total += s[o].t; if (!s[o].t) allOps = false; });
+    var sharpDay = false;
+    Object.keys(history).forEach(function (k) {
+      var r = 0, t = 0;
+      OP_ORDER.forEach(function (o) { var c = history[k][o]; if (c) { r += c[0]; t += c[0] + c[1]; } });
+      if (t >= 10 && r / t >= 0.9) sharpDay = true;
+    });
+    function bestFor(type) {
+      var m = 0;
+      Object.keys(bests).forEach(function (k) { if (k.indexOf(type + '|') === 0 && bests[k] > m) m = bests[k]; });
+      return m;
+    }
+    var rec = loadJSON(pfx(DAILY_KEY), null);
+    return {
+      total: total,
+      days: Object.keys(history).length,
+      allOps: allOps,
+      sharpDay: sharpDay,
+      bestStreak: bestStreak,
+      clockBest: bestFor('clock'),
+      popBest: bestFor('pop'),
+      tofBest: bestFor('tof'),
+      dailyBest: rec && rec.best ? rec.best : 0
+    };
+  }
+  var toastTimer = null;
+  function showStickerToast(def) {
+    var toastEl = document.getElementById('stickerToast');
+    toastEl.textContent = 'Sticker unlocked: ' + def.emoji + ' ' + def.name + '!';
+    toastEl.classList.add('show');
+    sfx('best');
+    celebrate();
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2600);
+  }
+  function checkStickers() {
+    var st = stickerStats();
+    var delay = 0;
+    STICKER_DEFS.forEach(function (def) {
+      if (!earnedStickers[def.id] && def.cond(st)) {
+        earnedStickers[def.id] = todayKey();
+        saveJSON(pfx(STICKERS_KEY), earnedStickers);
+        setTimeout(function () { showStickerToast(def); }, 600 + delay);
+        delay += 2800;
+      }
+    });
+  }
+  function renderStickers() {
+    var grid = document.getElementById('stickerGrid');
+    var count = 0;
+    grid.innerHTML = '';
+    STICKER_DEFS.forEach(function (def) {
+      var got = !!earnedStickers[def.id];
+      if (got) count++;
+      var d = document.createElement('div');
+      d.className = 'sticker' + (got ? '' : ' locked');
+      var face = document.createElement('div');
+      face.className = 'face';
+      face.textContent = got ? def.emoji : '?';
+      var nm = document.createElement('div');
+      nm.className = 's-name';
+      nm.textContent = got ? def.name : '???';
+      var ht = document.createElement('div');
+      ht.className = 's-hint';
+      ht.textContent = def.hint;
+      d.appendChild(face);
+      d.appendChild(nm);
+      d.appendChild(ht);
+      grid.appendChild(d);
+    });
+    document.getElementById('stickerCount').textContent = count + ' / ' + STICKER_DEFS.length + ' collected';
+  }
+  document.getElementById('stickersBtn').addEventListener('click', function () { renderStickers(); showView(stickersView); });
+  document.getElementById('stickersBack').addEventListener('click', function () { showView(startView); });
 
   // --- keep everything on screen when the mobile keyboard opens ---
   var appWrap = document.getElementById('appWrap');
