@@ -829,6 +829,12 @@
   <!-- 2-Player Duel screen -->
   <div id="duelView" class="hidden">
     <h2 class="check-title">2-Player Duel</h2>
+    <div id="duelSetup">
+      <p class="check-note">Who's duelling? Type your names:</p>
+      <div class="answer-row"><input type="text" id="duelName1" maxlength="12" placeholder="Player 1" style="border-color:#0075d4;"></div>
+      <div class="answer-row"><input type="text" id="duelName2" maxlength="12" placeholder="Player 2" style="border-color:#e3928b;"></div>
+      <button class="blue-btn" id="duelStart" type="button">Start Duel!</button>
+    </div>
     <div class="mini-progress" id="duelProgress"></div>
     <div class="duel-turn" id="duelTurn"></div>
     <div class="question" id="duelQuestion"></div>
@@ -2368,13 +2374,41 @@
   var duelAgainBtn = document.getElementById('duelAgain');
   var DUEL_NAMES = ['Blue Panda', 'Red Panda'];
   var duel = { round: 0, total: 10, scores: [0, 0], turn: 0, answer: 0, active: false, waiting: false };
+  var duelSetup = document.getElementById('duelSetup');
+  var duelName1 = document.getElementById('duelName1');
+  var duelName2 = document.getElementById('duelName2');
+  var DUEL_NAMES_KEY = 'mathsQuizDuelNames';
 
+  function openDuelSetup() {
+    var saved = loadJSON(DUEL_NAMES_KEY, null);
+    if (saved && saved.length === 2) {
+      duelName1.value = saved[0];
+      duelName2.value = saved[1];
+    }
+    duel.active = false;
+    duelSetup.classList.remove('hidden');
+    duelRow.classList.add('hidden');
+    duelAgainBtn.classList.add('hidden');
+    duelProgress.textContent = '';
+    duelTurn.textContent = '';
+    duelTurn.className = 'duel-turn';
+    duelQuestionEl.textContent = '';
+    duelFeedback.textContent = '';
+    showView(duelView);
+    duelName1.focus();
+  }
   function startDuel() {
+    DUEL_NAMES = [
+      (duelName1.value.trim() || 'Blue Panda').slice(0, 12),
+      (duelName2.value.trim() || 'Red Panda').slice(0, 12)
+    ];
+    if (DUEL_NAMES[0] === DUEL_NAMES[1]) DUEL_NAMES[1] += ' 2';
+    saveJSON(DUEL_NAMES_KEY, DUEL_NAMES);
+    duelSetup.classList.add('hidden');
     duel.round = 0; duel.scores = [0, 0]; duel.active = true; duel.waiting = false;
     duelAgainBtn.classList.add('hidden');
     duelRow.classList.remove('hidden');
     duelFeedback.textContent = '';
-    showView(duelView);
     nextDuel();
   }
   function nextDuel() {
@@ -2383,7 +2417,7 @@
     duel.turn = duel.round % 2;
     var q = genQuestion();
     duel.answer = q.answer;
-    duelProgress.textContent = 'Blue ' + duel.scores[0] + ' — ' + duel.scores[1] + ' Red · Question ' + (duel.round + 1) + ' of ' + duel.total;
+    duelProgress.textContent = DUEL_NAMES[0] + ' ' + duel.scores[0] + ' — ' + duel.scores[1] + ' ' + DUEL_NAMES[1] + ' · Question ' + (duel.round + 1) + ' of ' + duel.total;
     duelTurn.textContent = DUEL_NAMES[duel.turn] + ', your turn — pass the screen!';
     duelTurn.className = 'duel-turn ' + (duel.turn ? 'p2' : 'p1');
     duelQuestionEl.textContent = q.text + ' = ?';
@@ -2429,7 +2463,10 @@
     duelAgainBtn.classList.remove('hidden');
     fitToViewport();
   }
-  document.getElementById('duelBtn').addEventListener('click', startDuel);
+  document.getElementById('duelBtn').addEventListener('click', openDuelSetup);
+  document.getElementById('duelStart').addEventListener('click', startDuel);
+  duelName1.addEventListener('keydown', function (e) { if (e.key === 'Enter') duelName2.focus(); });
+  duelName2.addEventListener('keydown', function (e) { if (e.key === 'Enter') startDuel(); });
   document.getElementById('duelGo').addEventListener('click', duelAnswer);
   duelInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') duelAnswer(); });
   duelInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
