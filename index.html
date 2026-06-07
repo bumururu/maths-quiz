@@ -125,6 +125,74 @@
     color: #fff;
     border-color: #36884d;
   }
+
+  /* ---------- Let's Check ---------- */
+  .blue-btn {
+    font-family: 'Chango', 'Bree Serif', serif;
+    font-size: 17px;
+    background: #0075d4;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 20px 13px;
+    cursor: pointer;
+    box-shadow: #07468b 0 5px 0 0;
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+  }
+  .blue-btn:hover { background: #1a86e0; }
+  .blue-btn:active { transform: translateY(4px); box-shadow: #07468b 0 1px 0 0; }
+  .blue-btn.small { font-size: 14px; padding: 8px 16px 9px; box-shadow: #07468b 0 4px 0 0; }
+  .quiz-foot { margin-top: 16px; }
+  .check-title { font-family: 'Chango', 'Bree Serif', serif; font-size: 24px; color: #36884d; margin-bottom: 10px; }
+  .check-note { color: #36884d; font-weight: 600; margin: 8px 0 14px; font-size: 15px; }
+  .chart-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #36884d; font-weight: 800; text-align: left; margin: 12px 0 4px; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  .tipbox { background: #d9f2d9; border-radius: 14px; padding: 12px 14px; text-align: left; color: #36884d; margin: 12px 0 0; }
+  .tipbox h3 { font-family: 'Chango', 'Bree Serif', serif; font-size: 15px; margin-bottom: 6px; }
+  .tipbox ul { margin-left: 18px; }
+  .tipbox li { font-size: 13px; font-weight: 600; margin: 4px 0; }
+  .fact-list { background: #eef5fc; border-radius: 14px; padding: 10px 14px; text-align: left; color: #36884d; margin: 10px 0 0; }
+  .fact-list h3 { font-family: 'Chango', 'Bree Serif', serif; font-size: 14px; margin-bottom: 4px; color: #0075d4; }
+  .fact-list div { font-size: 13px; font-weight: 700; margin: 3px 0; }
+  .game-row { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 14px; }
+  .game-btn {
+    font-family: 'Chango', 'Bree Serif', serif;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #0075d4;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 14px;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: #07468b 0 4px 0 0;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .game-btn:active { transform: translateY(3px); box-shadow: #07468b 0 1px 0 0; }
+  .game-btn .pill {
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #d3b465;
+    border-radius: 999px;
+    padding: 3px 9px;
+    flex-shrink: 0;
+  }
+  .check-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+  .back-btn { font-family: 'Chango', 'Bree Serif', serif; font-size: 15px; background: #fff; color: #36884d; border: 3px solid #d7e3f0; border-radius: 14px; padding: 9px 18px; cursor: pointer; }
+  .back-btn:hover { border-color: #89cff0; }
+  .mini-progress { font-size: 12px; color: #36884d; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; min-height: 16px; }
+  .mini-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 12px; }
+  .mini-ans { font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 23px; padding: 13px 8px; border-radius: 14px; border: 3px solid #d7e3f0; background: #fff; color: #36884d; cursor: pointer; transition: background 0.12s, border-color 0.12s, transform 0.08s; }
+  .mini-ans:active { transform: scale(0.96); }
+  .mini-ans.right { background: #36884d; border-color: #36884d; color: #fff; }
+  .mini-ans.wrongpick { background: #e3928b; border-color: #e3928b; color: #fff; }
   .start-btn {
     display: inline-flex;
     align-items: center;
@@ -508,6 +576,11 @@
     .ops-hint { font-size: 11px; margin-top: 6px; }
     .levels { gap: 8px; margin-bottom: 12px; }
     .level-btn { font-size: 14px; padding: 8px 14px; }
+    .check-title { font-size: 19px; }
+    .mini-ans { font-size: 19px; padding: 10px 6px; }
+    .blue-btn { font-size: 15px; }
+    .game-btn { font-size: 13px; padding: 9px 11px; }
+    .tipbox li { font-size: 12px; }
     .card { padding: 18px 16px; border-radius: 18px; }
     .stats { margin-bottom: 8px; gap: 8px; }
     .stat { padding: 7px 6px; border-radius: 11px; }
@@ -616,6 +689,9 @@
       </span>
       <span>Start Quiz</span>
     </button>
+    <div>
+      <button class="blue-btn" id="checkBtnStart" type="button">Let's Check!</button>
+    </div>
   </div>
 
   <!-- Quiz screen -->
@@ -635,6 +711,37 @@
     </div>
     <div class="feedback" id="feedback"></div>
     <div class="attempts" id="attempts"></div>
+    <div class="quiz-foot">
+      <button class="blue-btn small" id="checkBtnQuiz" type="button">Let's Check!</button>
+    </div>
+  </div>
+
+  <!-- Let's Check screen -->
+  <div id="checkView" class="hidden">
+    <h2 class="check-title">Monty's Check-Up</h2>
+    <div id="checkBody"></div>
+    <div class="chart-label">Monty's training games</div>
+    <div class="game-row" id="gameRow"></div>
+    <div class="check-actions">
+      <button class="back-btn" id="checkBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Mini game screen -->
+  <div id="miniView" class="hidden">
+    <h2 class="check-title" id="miniTitle"></h2>
+    <div class="mini-progress" id="miniProgress"></div>
+    <div class="question" id="miniQuestion"></div>
+    <div class="mini-answers" id="miniAnswers"></div>
+    <div class="answer-row hidden" id="miniClockRow">
+      <input type="text" id="miniInput" inputmode="numeric" autocomplete="off">
+      <button class="check-btn" id="miniGo" type="button">Go</button>
+    </div>
+    <div class="feedback correct" id="miniFeedback"></div>
+    <div class="check-actions hidden" id="miniEnd">
+      <button class="blue-btn" id="miniAgain" type="button">Play Again</button>
+      <button class="back-btn" id="miniBack" type="button">Back</button>
+    </div>
   </div>
 </div>
 </div>
@@ -741,6 +848,7 @@
   var qnum = 1, score = 0, streak = 0, attempts = 0;
   var current = null;
   var locked = false;
+  var qStart = 0;   // when the current question appeared (for speed tracking)
 
   // --- persistent best streak (saved in this browser) ---
   var BEST_STREAK_KEY = 'mathsQuizBestStreak';
@@ -1034,8 +1142,8 @@
   function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
 
   // Generate first pair: returns [a, b, result] sized by the current level
-  function genPair(op) {
-    var L = LEVELS[level], a, b;
+  function genPair(op, Lopt) {
+    var L = Lopt || LEVELS[level], a, b;
     if (op === '+') {
       a = randInt(2, L.addMax); b = randInt(2, L.addMax);
       return [a, b, a + b];
@@ -1092,7 +1200,7 @@
       var a = pair[0], b = pair[1], r1 = pair[2];
 
       if (Math.random() < L.singleProb) {
-        return { text: a + ' ' + op1 + ' ' + b, answer: r1 };
+        return { text: a + ' ' + op1 + ' ' + b, answer: r1, ops: [op1] };
       }
 
       var op2 = pick(ops);
@@ -1105,11 +1213,11 @@
       var text = needBrackets
         ? '(' + a + ' ' + op1 + ' ' + b + ') ' + op2 + ' ' + c
         : a + ' ' + op1 + ' ' + b + ' ' + op2 + ' ' + c;
-      return { text: text, answer: r2 };
+      return { text: text, answer: r2, ops: [op1, op2] };
     }
     // Fallback (never expected): simple addition
     var x = randInt(2, LEVELS[level].addMax), y = randInt(2, LEVELS[level].addMax);
-    return { text: x + ' + ' + y, answer: x + y };
+    return { text: x + ' + ' + y, answer: x + y, ops: ['+'] };
   }
 
   function nextQuestion() {
@@ -1123,6 +1231,7 @@
     feedbackEl.className = 'feedback';
     attemptsEl.textContent = '';
     answerEl.focus();
+    qStart = Date.now();
   }
 
   function check() {
@@ -1135,12 +1244,18 @@
       return;
     }
     var val = Number(raw);
+    var elapsed = Date.now() - qStart;
+    var fasterNote = '';
     if (val === current.answer) {
       locked = true;
       score++;
       if (attempts === 0) {
         streak++;
         popEl(streakEl);
+        recordResult(current.ops, true, elapsed);
+        if (recordFact(current.text, true, elapsed)) {
+          fasterNote = ' Faster than last time — ' + (elapsed / 1000).toFixed(1) + 's!';
+        }
       }
       scoreEl.textContent = score;
       streakEl.textContent = streak;
@@ -1155,7 +1270,7 @@
         popEl(bestStreakEl);
       }
 
-      var msg = pick(praise) + (attempts === 0 ? ' First try!' : '');
+      var msg = pick(praise) + (attempts === 0 ? ' First try!' : '') + fasterNote;
       if (newBestStreak) msg += ' 🏆 New best!';
       feedbackEl.textContent = msg;
       feedbackEl.className = 'feedback correct';
@@ -1169,6 +1284,10 @@
       qnum++;
       setTimeout(nextQuestion, monty ? 3400 : (newBestStreak ? 2600 : 1200));
     } else {
+      if (attempts === 0) {
+        recordResult(current.ops, false, elapsed);
+        recordFact(current.text, false, elapsed);
+      }
       attempts++;
       if (attempts === 1) {
         streak = 0;
@@ -1197,6 +1316,441 @@
   checkBtn.addEventListener('click', check);
   answerEl.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') check();
+  });
+
+  // ===================== Let's Check =====================
+  // History: per-day, per-op cells [right, wrong, timeSumMs, timedCount]
+  // Facts: per exact question [tries, rights, firstMs, lastMs, bestMs]
+  var HIST_KEY = 'mathsQuizHistory';
+  var FACTS_KEY = 'mathsQuizFacts';
+  var history = loadJSON(HIST_KEY, {});
+  var facts = loadJSON(FACTS_KEY, { map: {}, order: [] });
+  if (!facts.map) facts = { map: {}, order: [] };
+
+  var OP_COLORS = { '+': '#0075d4', '−': '#07468b', '×': '#36884d', '÷': '#1b2435' };
+  var OP_NAMES = { '+': 'adding', '−': 'taking away', '×': 'times', '÷': 'sharing' };
+  var TIPS = {
+    '+': ['Make a ten first: 8 + 6 is 8 + 2 + 4 = 14',
+          'Add the tens first, then the ones',
+          'Start from the bigger number and count up'],
+    '−': ['Count up from the small number to the big one',
+          'Take away the tens first, then the ones',
+          'Use what you know: 7 + 3 = 10, so 10 − 3 = 7'],
+    '×': ['Times 4 is double it, then double it again',
+          'Times 9 is times 10, then take one lot away',
+          'Say the times table out loud — it sticks!'],
+    '÷': ['Division is a hidden times question: 24 ÷ 6 asks 6 × ? = 24',
+          'Share it out in your head, one round at a time',
+          'Strong times tables make division easy']
+  };
+
+  function todayKey() {
+    var d = new Date();
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+  function recordResult(ops, right, ms) {
+    var k = todayKey();
+    var day = history[k] || {};
+    ops.forEach(function (op) {
+      var cell = day[op] || [0, 0, 0, 0];
+      while (cell.length < 4) cell.push(0);
+      cell[right ? 0 : 1]++;
+      cell[2] += ms;
+      cell[3]++;
+      day[op] = cell;
+    });
+    history[k] = day;
+    saveJSON(HIST_KEY, history);
+  }
+  // returns true when answered right AND faster than the previous correct time
+  function recordFact(text, right, ms) {
+    var f = facts.map[text];
+    var prevLast = f ? f[3] : 0;
+    if (!f) {
+      f = [0, 0, 0, 0, 0];
+      facts.map[text] = f;
+      facts.order.push(text);
+      if (facts.order.length > 500) {
+        facts.order.splice(0, 100).forEach(function (k) { delete facts.map[k]; });
+      }
+    }
+    f[0]++;
+    if (right) {
+      f[1]++;
+      if (!f[2]) f[2] = ms;
+      f[3] = ms;
+      f[4] = f[4] ? Math.min(f[4], ms) : ms;
+    }
+    saveJSON(FACTS_KEY, facts);
+    return !!(right && prevLast && ms < prevLast);
+  }
+  function opTotals() {
+    var s = {};
+    OP_ORDER.forEach(function (o) { s[o] = { r: 0, w: 0, t: 0, acc: 0, ms: 0, msN: 0 }; });
+    Object.keys(history).forEach(function (k) {
+      OP_ORDER.forEach(function (o) {
+        var c = history[k][o];
+        if (c) { s[o].r += c[0]; s[o].w += c[1]; s[o].ms += c[2] || 0; s[o].msN += c[3] || 0; }
+      });
+    });
+    OP_ORDER.forEach(function (o) {
+      s[o].t = s[o].r + s[o].w;
+      s[o].acc = s[o].t ? s[o].r / s[o].t : 0;
+      s[o].avg = s[o].msN ? s[o].ms / s[o].msN : 0;
+    });
+    return s;
+  }
+  // weakest = least accurate; if everything is accurate, the slowest
+  function focusOp() {
+    var s = opTotals();
+    var tried = OP_ORDER.filter(function (o) { return s[o].t >= 4; });
+    if (!tried.length) {
+      var least = OP_ORDER.slice();
+      least.sort(function (a, b) { return s[a].t - s[b].t; });
+      return least[0];
+    }
+    tried.sort(function (a, b) { return s[a].acc - s[b].acc; });
+    if (s[tried[0]].acc < 0.85) return tried[0];
+    tried.sort(function (a, b) { return s[b].avg - s[a].avg; });
+    return tried[0];
+  }
+  function suggestedGame(op) {
+    var s = opTotals()[op];
+    if (s.t < 4 || s.acc < 0.6) return 'pop';
+    if (s.acc < 0.85) return 'tof';
+    return 'clock';
+  }
+
+  function dailyChartSVG() {
+    var days = Object.keys(history).sort().slice(-14);
+    var pts = [];
+    days.forEach(function (k) {
+      var r = 0, t = 0, ms = 0, msN = 0;
+      OP_ORDER.forEach(function (o) {
+        var c = history[k][o];
+        if (c) { r += c[0]; t += c[0] + c[1]; ms += c[2] || 0; msN += c[3] || 0; }
+      });
+      if (t > 0) pts.push({
+        label: k.slice(8, 10) + '/' + k.slice(5, 7),
+        acc: Math.round(r / t * 100),
+        spd: msN ? (ms / msN / 1000).toFixed(1) : null
+      });
+    });
+    if (!pts.length) return '';
+    var plotH = 100, base = 125;
+    var svg = '<div class="chart-label">Day by day: how right (bars) and how fast (underneath)</div>' +
+      '<svg class="chart" viewBox="0 0 420 172" xmlns="http://www.w3.org/2000/svg">';
+    [0, 50, 100].forEach(function (g) {
+      var y = base - g / 100 * plotH;
+      svg += '<line x1="30" y1="' + y + '" x2="415" y2="' + y + '" stroke="#d7e3f0" stroke-width="1"/>' +
+        '<text x="24" y="' + (y + 4) + '" font-size="10" fill="#36884d" text-anchor="end" font-family="Nunito, sans-serif" font-weight="800">' + g + '</text>';
+    });
+    var span = 385 / pts.length;
+    var bw = Math.min(36, span * 0.6);
+    pts.forEach(function (p, i) {
+      var x = 30 + span * i + (span - bw) / 2;
+      var h = Math.max(2, p.acc / 100 * plotH);
+      var cx = x + bw / 2;
+      svg += '<rect x="' + x + '" y="' + (base - h) + '" width="' + bw + '" height="' + h + '" rx="4" fill="#62bb78"/>' +
+        '<text x="' + cx + '" y="' + (base - h - 5) + '" font-size="11" fill="#36884d" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="800">' + p.acc + '%</text>' +
+        '<text x="' + cx + '" y="141" font-size="9" fill="#36884d" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="800">' + p.label + '</text>';
+      if (p.spd) svg += '<text x="' + cx + '" y="156" font-size="10" fill="#0075d4" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="800">' + p.spd + 's</text>';
+    });
+    svg += '</svg>';
+    if (pts.length === 1) svg += '<div class="check-note">Come back tomorrow and watch the chart grow!</div>';
+    return svg;
+  }
+
+  function opChartSVG() {
+    var s = opTotals();
+    var rowH = 36;
+    var svg = '<div class="chart-label">How you are doing at each one</div>' +
+      '<svg class="chart" viewBox="0 0 420 ' + (rowH * 4) + '" xmlns="http://www.w3.org/2000/svg">';
+    OP_ORDER.forEach(function (o, i) {
+      var y = i * rowH;
+      svg += '<rect x="0" y="' + (y + 4) + '" width="26" height="26" rx="7" fill="' + OP_COLORS[o] + '"/>' +
+        '<text x="13" y="' + (y + 23) + '" font-size="16" fill="#fff" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="800">' + o + '</text>';
+      if (s[o].t) {
+        var pct = Math.round(s[o].acc * 100);
+        var bw = Math.max(4, pct / 100 * 250);
+        var spd = s[o].avg ? ' · ' + (s[o].avg / 1000).toFixed(1) + 's' : '';
+        svg += '<rect x="36" y="' + (y + 7) + '" width="250" height="20" rx="8" fill="#eef5fc"/>' +
+          '<rect x="36" y="' + (y + 7) + '" width="' + bw + '" height="20" rx="8" fill="' + OP_COLORS[o] + '"/>' +
+          '<text x="294" y="' + (y + 22) + '" font-size="12" fill="#36884d" font-family="Nunito, sans-serif" font-weight="800">' + pct + '%' + spd + '</text>';
+      } else {
+        svg += '<text x="36" y="' + (y + 22) + '" font-size="12" fill="#9bb0c1" font-family="Nunito, sans-serif" font-weight="800">not tried yet</text>';
+      }
+    });
+    return svg + '</svg>';
+  }
+
+  function factListsHTML() {
+    var imp = [], tricky = [];
+    facts.order.forEach(function (k) {
+      var f = facts.map[k];
+      if (f[1] >= 2 && f[2] && f[4] && f[2] - f[4] > 1500) imp.push({ k: k, from: f[2], to: f[4], gain: f[2] - f[4] });
+      if (f[0] >= 2 && f[1] / f[0] <= 0.5) tricky.push({ k: k, t: f[0], r: f[1] });
+    });
+    var html = '';
+    if (imp.length) {
+      imp.sort(function (a, b) { return b.gain - a.gain; });
+      html += '<div class="fact-list"><h3>Most improved</h3>' + imp.slice(0, 3).map(function (e) {
+        return '<div>' + e.k + '  ·  ' + (e.from / 1000).toFixed(1) + 's → ' + (e.to / 1000).toFixed(1) + 's</div>';
+      }).join('') + '</div>';
+    }
+    if (tricky.length) {
+      tricky.sort(function (a, b) { return (a.r / a.t) - (b.r / b.t); });
+      html += '<div class="fact-list"><h3>Still tricky — the games will help!</h3>' + tricky.slice(0, 3).map(function (e) {
+        return '<div>' + e.k + '  ·  right ' + e.r + ' of ' + e.t + ' tries</div>';
+      }).join('') + '</div>';
+    }
+    return html;
+  }
+
+  function tipboxHTML(op) {
+    var items = TIPS[op].map(function (t) { return '<li>' + t + '</li>'; }).join('');
+    return '<div class="tipbox"><h3>Monty’s tips for ' + OP_NAMES[op] + ' (' + op + ')</h3><ul>' + items + '</ul></div>';
+  }
+
+  var checkView = document.getElementById('checkView');
+  var miniView = document.getElementById('miniView');
+  var checkBody = document.getElementById('checkBody');
+  var gameRow = document.getElementById('gameRow');
+  var returnView = startView;
+
+  function showView(v) {
+    [startView, quizView, checkView, miniView].forEach(function (el) { el.classList.add('hidden'); });
+    v.classList.remove('hidden');
+    fitToViewport();
+  }
+
+  var GAME_DEFS = [
+    { id: 'pop', name: 'Pop Quiz', desc: 'pick the right answer' },
+    { id: 'tof', name: 'True or False?', desc: 'spot the fibs' },
+    { id: 'clock', name: 'Beat the Clock', desc: '45 seconds — go!' }
+  ];
+  function renderCheck() {
+    var focus = focusOp();
+    if (!Object.keys(history).length) {
+      checkBody.innerHTML = '<p class="check-note">Monty has nothing to check yet! Answer some quiz questions first, then come back to see your progress. You can still play a training game below.</p>';
+    } else {
+      checkBody.innerHTML = dailyChartSVG() + opChartSVG() + factListsHTML() + tipboxHTML(focus);
+    }
+    var sg = suggestedGame(focus);
+    gameRow.innerHTML = '';
+    GAME_DEFS.forEach(function (d) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'game-btn';
+      b.innerHTML = '<span>' + d.name + ' — ' + OP_NAMES[focus] + ' (' + focus + ')</span>' +
+        (d.id === sg ? '<span class="pill">Monty suggests</span>' : '');
+      b.addEventListener('click', function () { startGame(d.id, focus); });
+      gameRow.appendChild(b);
+    });
+  }
+  function openCheck(from) {
+    returnView = from;
+    renderCheck();
+    showView(checkView);
+  }
+  document.getElementById('checkBtnStart').addEventListener('click', function () { openCheck(startView); });
+  document.getElementById('checkBtnQuiz').addEventListener('click', function () { openCheck(quizView); });
+  document.getElementById('checkBack').addEventListener('click', function () {
+    showView(returnView);
+    if (returnView === quizView) answerEl.focus();
+  });
+
+  // --- three training games, all aimed at the weak spot ---
+  var miniTitle = document.getElementById('miniTitle');
+  var miniProgress = document.getElementById('miniProgress');
+  var miniQuestion = document.getElementById('miniQuestion');
+  var miniAnswers = document.getElementById('miniAnswers');
+  var miniClockRow = document.getElementById('miniClockRow');
+  var miniInput = document.getElementById('miniInput');
+  var miniFeedback = document.getElementById('miniFeedback');
+  var miniEnd = document.getElementById('miniEnd');
+  var game = { type: 'pop', op: '×', round: 0, score: 0, total: 10, answer: 0, locked: false };
+  var clockTimer = null, clockEndAt = 0;
+
+  function shuffleArr(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = randInt(0, i), tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+  function gameLevel(op) {
+    var s = opTotals()[op];
+    return (s.t < 4 || s.acc < 0.5) ? LEVELS.easy : LEVELS.medium;
+  }
+  function makeChoices(ans) {
+    var out = [ans];
+    var offs = shuffleArr([1, -1, 2, -2, 3, -3, 10, -10, 5, -5]);
+    for (var i = 0; i < offs.length && out.length < 4; i++) {
+      var v = ans + offs[i];
+      if (v >= 0 && out.indexOf(v) < 0) out.push(v);
+    }
+    while (out.length < 4) {
+      var w = ans + randInt(4, 14);
+      if (out.indexOf(w) < 0) out.push(w);
+    }
+    return shuffleArr(out);
+  }
+  function gameTitle(type, op) {
+    var d = null;
+    GAME_DEFS.forEach(function (g) { if (g.id === type) d = g; });
+    return d.name + ' — ' + OP_NAMES[op];
+  }
+  function startGame(type, op) {
+    clearInterval(clockTimer);
+    game = { type: type, op: op, round: 0, score: 0, total: type === 'tof' ? 12 : 10, answer: 0, locked: false };
+    miniTitle.textContent = gameTitle(type, op);
+    miniEnd.classList.add('hidden');
+    miniFeedback.textContent = '';
+    miniClockRow.classList.add('hidden');
+    miniAnswers.innerHTML = '';
+    showView(miniView);
+    if (type === 'clock') startClock();
+    else nextRound();
+  }
+  function ansButton(label, handler) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mini-ans';
+    b.textContent = label;
+    b.addEventListener('click', handler);
+    miniAnswers.appendChild(b);
+    return b;
+  }
+  function nextRound() {
+    game.locked = false;
+    miniFeedback.textContent = '';
+    if (game.round >= game.total) { endGame(); return; }
+    game.round++;
+    miniProgress.textContent = 'Question ' + game.round + ' of ' + game.total + ' · Score ' + game.score;
+    var pair = genPair(game.op, gameLevel(game.op));
+    var a = pair[0], b = pair[1], ans = pair[2];
+    miniAnswers.innerHTML = '';
+    if (game.type === 'pop') {
+      game.answer = ans;
+      miniQuestion.textContent = a + ' ' + game.op + ' ' + b + ' = ?';
+      makeChoices(ans).forEach(function (val) {
+        ansButton(val, function () { pickPop(this, val); });
+      });
+    } else {
+      var truth = Math.random() < 0.5;
+      var shown = ans;
+      if (!truth) {
+        var offs = shuffleArr([1, -1, 2, -2, 3, 10, -10]);
+        for (var i = 0; i < offs.length; i++) {
+          if (ans + offs[i] >= 0) { shown = ans + offs[i]; break; }
+        }
+      }
+      game.answer = (shown === ans);
+      miniQuestion.textContent = a + ' ' + game.op + ' ' + b + ' = ' + shown + '?';
+      ansButton('True', function () { pickTof(this, true, ans); });
+      ansButton('False', function () { pickTof(this, false, ans); });
+    }
+    fitToViewport();
+  }
+  function markRight() {
+    Array.prototype.forEach.call(miniAnswers.children, function (b) {
+      if (game.type === 'pop' && Number(b.textContent) === game.answer) b.classList.add('right');
+      if (game.type === 'tof' && (b.textContent === 'True') === game.answer) b.classList.add('right');
+    });
+  }
+  function pickPop(btn, val) {
+    if (game.locked) return;
+    game.locked = true;
+    if (val === game.answer) {
+      btn.classList.add('right');
+      game.score++;
+      miniFeedback.textContent = pick(praise);
+      celebrate();
+      setTimeout(nextRound, 800);
+    } else {
+      btn.classList.add('wrongpick');
+      markRight();
+      miniFeedback.textContent = 'It was ' + game.answer + ' — keep going!';
+      setTimeout(nextRound, 1400);
+    }
+  }
+  function pickTof(btn, val, realAns) {
+    if (game.locked) return;
+    game.locked = true;
+    if (val === game.answer) {
+      btn.classList.add('right');
+      game.score++;
+      miniFeedback.textContent = pick(praise);
+      celebrate();
+      setTimeout(nextRound, 700);
+    } else {
+      btn.classList.add('wrongpick');
+      markRight();
+      miniFeedback.textContent = 'It really makes ' + realAns + '!';
+      setTimeout(nextRound, 1400);
+    }
+  }
+  function startClock() {
+    miniClockRow.classList.remove('hidden');
+    clockEndAt = Date.now() + 45000;
+    clockQuestion();
+    miniInput.focus();
+    clockTimer = setInterval(function () {
+      var left = Math.max(0, clockEndAt - Date.now());
+      miniProgress.textContent = Math.ceil(left / 1000) + 's left · Score ' + game.score;
+      if (!left) { clearInterval(clockTimer); endGame(); }
+    }, 200);
+  }
+  function clockQuestion() {
+    var pair = genPair(game.op, gameLevel(game.op));
+    game.answer = pair[2];
+    miniQuestion.textContent = pair[0] + ' ' + game.op + ' ' + pair[1] + ' = ?';
+    miniInput.value = '';
+  }
+  function clockCheck() {
+    var raw = miniInput.value.trim();
+    if (raw === '' || isNaN(Number(raw))) return;
+    if (Number(raw) === game.answer) {
+      game.score++;
+      popEl(miniQuestion);
+      miniFeedback.textContent = '';
+    } else {
+      miniFeedback.textContent = 'It was ' + game.answer + '!';
+      miniInput.classList.remove('shake');
+      void miniInput.offsetWidth;
+      miniInput.classList.add('shake');
+    }
+    clockQuestion();
+    miniInput.focus();
+  }
+  document.getElementById('miniGo').addEventListener('click', clockCheck);
+  miniInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') clockCheck(); });
+  miniInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
+  function endGame() {
+    miniClockRow.classList.add('hidden');
+    miniAnswers.innerHTML = '';
+    var great;
+    if (game.type === 'clock') {
+      miniProgress.textContent = 'Time’s up!';
+      miniQuestion.textContent = game.score + ' answered!';
+      great = game.score >= 10;
+    } else {
+      miniProgress.textContent = 'All done!';
+      miniQuestion.textContent = game.score + ' / ' + game.total;
+      great = game.score >= game.total * 0.8;
+    }
+    miniFeedback.textContent = great ? 'Brilliant! Monty is dancing!' :
+      (game.score >= game.total * 0.5 ? 'Good work — one more go?' : 'Tricky! Read Monty’s tips and try again.');
+    miniEnd.classList.remove('hidden');
+    if (great) pandaDance();
+    fitToViewport();
+  }
+  document.getElementById('miniAgain').addEventListener('click', function () { startGame(game.type, game.op); });
+  document.getElementById('miniBack').addEventListener('click', function () {
+    clearInterval(clockTimer);
+    renderCheck();
+    showView(checkView);
   });
 
   // --- keep everything on screen when the mobile keyboard opens ---
