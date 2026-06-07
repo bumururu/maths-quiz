@@ -83,11 +83,48 @@
     font-weight: 800;
     font-size: 20px;
     color: #fff;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: opacity 0.15s, transform 0.15s, filter 0.15s;
   }
   .ops .op-add { background: #0075d4; }
   .ops .op-sub { background: #07468b; }
   .ops .op-mul { background: #36884d; }
   .ops .op-div { background: #1b2435; }
+  .ops span.off { opacity: 0.32; filter: saturate(0.35); transform: scale(0.9); }
+  .ops-hint {
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: #36884d;
+    text-align: center;
+    margin-top: 8px;
+  }
+  .levels {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 18px;
+  }
+  .level-btn {
+    font-family: 'Chango', 'Bree Serif', serif;
+    font-size: 18px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    border: 3px solid #d7e3f0;
+    background: #fff;
+    color: #36884d;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  .level-btn:hover { border-color: #89cff0; }
+  .level-btn:active { transform: scale(0.96); }
+  .level-btn.selected {
+    background: #36884d;
+    color: #fff;
+    border-color: #36884d;
+  }
   .start-btn {
     display: inline-flex;
     align-items: center;
@@ -468,6 +505,9 @@
     .logo-word { font-size: 32px; letter-spacing: -0.3px; }
     .ops { gap: 8px; }
     .ops span { width: 26px; height: 26px; border-radius: 7px; font-size: 15px; }
+    .ops-hint { font-size: 11px; margin-top: 6px; }
+    .levels { gap: 8px; margin-bottom: 12px; }
+    .level-btn { font-size: 14px; padding: 8px 14px; }
     .card { padding: 18px 16px; border-radius: 18px; }
     .stats { margin-bottom: 8px; gap: 8px; }
     .stat { padding: 7px 6px; border-radius: 11px; }
@@ -526,17 +566,23 @@
       </div>
     </div>
   <div class="ops">
-    <span class="op-add">+</span>
-    <span class="op-sub">&minus;</span>
-    <span class="op-mul">&times;</span>
-    <span class="op-div">&divide;</span>
+    <span class="op-add" data-op="+" role="button" tabindex="0" aria-pressed="true" aria-label="Addition">+</span>
+    <span class="op-sub" data-op="−" role="button" tabindex="0" aria-pressed="true" aria-label="Subtraction">&minus;</span>
+    <span class="op-mul" data-op="×" role="button" tabindex="0" aria-pressed="true" aria-label="Multiplication">&times;</span>
+    <span class="op-div" data-op="÷" role="button" tabindex="0" aria-pressed="true" aria-label="Division">&divide;</span>
   </div>
+  <div class="ops-hint" id="opsHint">Tap an operation to turn it on or off</div>
 </div>
 
 <div class="card" id="card">
 
   <!-- Start screen -->
   <div id="startView">
+    <div class="levels" role="group" aria-label="Difficulty">
+      <button class="level-btn" data-level="easy" type="button">Easy</button>
+      <button class="level-btn" data-level="medium" type="button">Medium</button>
+      <button class="level-btn" data-level="hard" type="button">Hard</button>
+    </div>
     <button class="start-btn" id="startBtn">
       <span class="icon">
         <svg viewBox="0 -40 240 270" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -711,6 +757,80 @@
 
   var bestStreak = loadBest(BEST_STREAK_KEY);
   bestStreakEl.textContent = bestStreak;
+
+  // --- difficulty levels + operator toggles ---
+  var OPS_KEY = 'mathsQuizOps';
+  var LEVEL_KEY = 'mathsQuizLevel';
+  var LEVELS = {
+    easy:   { addMax: 10, subMin: 5,  mulMax: 5,  divMax: 25,  singleProb: 1 },
+    medium: { addMax: 49, subMin: 5,  mulMax: 12, divMax: 49,  singleProb: 0.45 },
+    hard:   { addMax: 99, subMin: 12, mulMax: 12, divMax: 144, singleProb: 0.15 }
+  };
+  var OP_ORDER = ['+', '−', '×', '÷'];
+
+  function loadJSON(key, fallback) {
+    try {
+      var v = JSON.parse(localStorage.getItem(key));
+      return v === null || v === undefined ? fallback : v;
+    } catch (e) { return fallback; }
+  }
+  function saveJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+
+  var enabledOps = loadJSON(OPS_KEY, null);
+  if (!enabledOps || !OP_ORDER.some(function (o) { return enabledOps[o]; })) {
+    enabledOps = { '+': true, '−': true, '×': true, '÷': true };
+  }
+  var level = loadJSON(LEVEL_KEY, 'medium');
+  if (!LEVELS[level]) level = 'medium';
+
+  function activeOps() {
+    return OP_ORDER.filter(function (o) { return enabledOps[o]; });
+  }
+
+  var opChips = document.querySelectorAll('.ops span');
+  function refreshChips() {
+    Array.prototype.forEach.call(opChips, function (chip) {
+      var on = !!enabledOps[chip.getAttribute('data-op')];
+      chip.classList.toggle('off', !on);
+      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  function toggleOp(chip) {
+    var op = chip.getAttribute('data-op');
+    if (enabledOps[op] && activeOps().length === 1) {
+      chip.classList.remove('shake');
+      void chip.offsetWidth;
+      chip.classList.add('shake');   // last one standing: refuse with a wobble
+      return;
+    }
+    enabledOps[op] = !enabledOps[op];
+    saveJSON(OPS_KEY, enabledOps);
+    refreshChips();
+  }
+  Array.prototype.forEach.call(opChips, function (chip) {
+    chip.addEventListener('click', function () { toggleOp(chip); });
+    chip.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOp(chip); }
+    });
+  });
+  refreshChips();
+
+  var levelBtns = document.querySelectorAll('.level-btn');
+  function refreshLevels() {
+    Array.prototype.forEach.call(levelBtns, function (btn) {
+      btn.classList.toggle('selected', btn.getAttribute('data-level') === level);
+    });
+  }
+  Array.prototype.forEach.call(levelBtns, function (btn) {
+    btn.addEventListener('click', function () {
+      level = btn.getAttribute('data-level');
+      saveJSON(LEVEL_KEY, level);
+      refreshLevels();
+    });
+  });
+  refreshLevels();
 
   // --- celebrations: confetti + dancing panda ---
   var confettiCanvas = document.getElementById('confettiCanvas');
@@ -913,43 +1033,42 @@
   }
   function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
 
-  // Generate first pair: returns [a, b, result] with a,b in 2..49, result a positive whole number
+  // Generate first pair: returns [a, b, result] sized by the current level
   function genPair(op) {
-    var a, b;
+    var L = LEVELS[level], a, b;
     if (op === '+') {
-      a = randInt(2, 49); b = randInt(2, 49);
+      a = randInt(2, L.addMax); b = randInt(2, L.addMax);
       return [a, b, a + b];
     }
     if (op === '−') {
-      a = randInt(5, 49); b = randInt(2, a - 1);
+      a = randInt(L.subMin, L.addMax); b = randInt(2, a - 1);
       return [a, b, a - b];
     }
     if (op === '×') {
-      a = randInt(2, 12); b = randInt(2, 12);
+      a = randInt(2, L.mulMax); b = randInt(2, L.mulMax);
       return [a, b, a * b];
     }
-    // division: exact, both numbers < 50
-    var d = randInt(2, 12);
-    var q = randInt(2, Math.floor(49 / d));
-    if (q < 2) return null;
+    // division: exact, dividend capped by level
+    var d = randInt(2, L.mulMax);
+    var q = randInt(2, Math.max(2, Math.floor(L.divMax / d)));
     return [q * d, d, q];
   }
 
-  // Apply second operation to running result r with new number c (< 50)
+  // Apply second operation to running result r with new number c
   function genSecond(r, op) {
-    var c;
+    var L = LEVELS[level], c;
     if (op === '+') {
-      c = randInt(2, 49);
+      c = randInt(2, L.addMax);
       return [c, r + c];
     }
     if (op === '−') {
       if (r < 4) return null;
-      c = randInt(2, Math.min(49, r - 1));
+      c = randInt(2, Math.min(L.addMax, r - 1));
       return [c, r - c];
     }
     if (op === '×') {
       if (r > 25) return null;          // keep it mental-maths sized
-      c = randInt(2, r > 12 ? 6 : 12);
+      c = randInt(2, r > 12 ? 6 : L.mulMax);
       if (r * c > 200) return null;
       return [c, r * c];
     }
@@ -964,14 +1083,15 @@
   }
 
   function genQuestion() {
-    var ops = ['+', '−', '×', '÷'];
+    var L = LEVELS[level];
+    var ops = activeOps();
     for (var t = 0; t < 300; t++) {
       var op1 = pick(ops);
       var pair = genPair(op1);
       if (!pair) continue;
       var a = pair[0], b = pair[1], r1 = pair[2];
 
-      if (Math.random() < 0.45) {
+      if (Math.random() < L.singleProb) {
         return { text: a + ' ' + op1 + ' ' + b, answer: r1 };
       }
 
@@ -988,7 +1108,7 @@
       return { text: text, answer: r2 };
     }
     // Fallback (never expected): simple addition
-    var x = randInt(2, 49), y = randInt(2, 49);
+    var x = randInt(2, LEVELS[level].addMax), y = randInt(2, LEVELS[level].addMax);
     return { text: x + ' + ' + y, answer: x + y };
   }
 
@@ -1068,6 +1188,8 @@
   startBtn.addEventListener('click', function () {
     startView.classList.add('hidden');
     quizView.classList.remove('hidden');
+    var opsHint = document.getElementById('opsHint');
+    if (opsHint) opsHint.classList.add('hidden');
     nextQuestion();
     fitToViewport();
   });
