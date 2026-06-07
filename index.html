@@ -719,11 +719,21 @@
   <!-- Let's Check screen -->
   <div id="checkView" class="hidden">
     <h2 class="check-title">Monty's Check-Up</h2>
+    <div id="checkSummary"></div>
+    <div class="check-actions">
+      <button class="blue-btn" id="graphBtn" type="button">Graph</button>
+      <button class="back-btn" id="checkBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Graph screen: improvements, work-ons and training games -->
+  <div id="graphView" class="hidden">
+    <h2 class="check-title">Your Graph</h2>
     <div id="checkBody"></div>
     <div class="chart-label">Monty's training games</div>
     <div class="game-row" id="gameRow"></div>
     <div class="check-actions">
-      <button class="back-btn" id="checkBack" type="button">Back</button>
+      <button class="back-btn" id="graphBack" type="button">Back</button>
     </div>
   </div>
 
@@ -1253,7 +1263,7 @@
         streak++;
         popEl(streakEl);
         recordResult(current.ops, true, elapsed);
-        if (recordFact(current.text, true, elapsed)) {
+        if (recordFact(current.text, current.answer, true, elapsed)) {
           fasterNote = ' Faster than last time — ' + (elapsed / 1000).toFixed(1) + 's!';
         }
       }
@@ -1286,7 +1296,7 @@
     } else {
       if (attempts === 0) {
         recordResult(current.ops, false, elapsed);
-        recordFact(current.text, false, elapsed);
+        recordFact(current.text, current.answer, false, elapsed);
       }
       attempts++;
       if (attempts === 1) {
@@ -1364,17 +1374,18 @@
     saveJSON(HIST_KEY, history);
   }
   // returns true when answered right AND faster than the previous correct time
-  function recordFact(text, right, ms) {
+  function recordFact(text, answer, right, ms) {
     var f = facts.map[text];
     var prevLast = f ? f[3] : 0;
     if (!f) {
-      f = [0, 0, 0, 0, 0];
+      f = [0, 0, 0, 0, 0, answer];
       facts.map[text] = f;
       facts.order.push(text);
       if (facts.order.length > 500) {
         facts.order.splice(0, 100).forEach(function (k) { delete facts.map[k]; });
       }
     }
+    f[5] = answer;
     f[0]++;
     if (right) {
       f[1]++;
@@ -1514,13 +1525,15 @@
   }
 
   var checkView = document.getElementById('checkView');
+  var graphView = document.getElementById('graphView');
   var miniView = document.getElementById('miniView');
+  var checkSummary = document.getElementById('checkSummary');
   var checkBody = document.getElementById('checkBody');
   var gameRow = document.getElementById('gameRow');
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, miniView].forEach(function (el) { el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView].forEach(function (el) { el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -1531,9 +1544,25 @@
     { id: 'clock', name: 'Beat the Clock', desc: '45 seconds — go!' }
   ];
   function renderCheck() {
+    var s = opTotals();
+    var total = 0, right = 0;
+    OP_ORDER.forEach(function (o) { total += s[o].t; right += s[o].r; });
+    var focus = focusOp();
+    var html;
+    if (!total) {
+      html = '<p class="check-note">Monty has nothing to check yet! Answer some quiz questions first — or press Graph to find the training games.</p>';
+    } else {
+      html = '<p class="check-note">You have answered ' + total + ' question' + (total === 1 ? '' : 's') +
+        ' and got ' + Math.round(right / total * 100) + '% right first try. ' +
+        'Monty thinks a bit of ' + OP_NAMES[focus] + ' (' + focus + ') practice would help most.</p>' +
+        '<p class="check-note">Press <strong>Graph</strong> to see your improvements, what to work on, and the training games!</p>';
+    }
+    checkSummary.innerHTML = html;
+  }
+  function renderGraph() {
     var focus = focusOp();
     if (!Object.keys(history).length) {
-      checkBody.innerHTML = '<p class="check-note">Monty has nothing to check yet! Answer some quiz questions first, then come back to see your progress. You can still play a training game below.</p>';
+      checkBody.innerHTML = '<p class="check-note">No graph yet — answer some quiz questions first! You can still play a training game below.</p>';
     } else {
       checkBody.innerHTML = dailyChartSVG() + opChartSVG() + factListsHTML() + tipboxHTML(focus);
     }
@@ -1560,6 +1589,14 @@
     showView(returnView);
     if (returnView === quizView) answerEl.focus();
   });
+  document.getElementById('graphBtn').addEventListener('click', function () {
+    renderGraph();
+    showView(graphView);
+  });
+  document.getElementById('graphBack').addEventListener('click', function () {
+    renderCheck();
+    showView(checkView);
+  });
 
   // --- three training games, all aimed at the weak spot ---
   var miniTitle = document.getElementById('miniTitle');
@@ -1583,6 +1620,25 @@
     var s = opTotals()[op];
     return (s.t < 4 || s.acc < 0.5) ? LEVELS.easy : LEVELS.medium;
   }
+  // questions answered wrong in the real quiz (with known answers) — the games feed on these
+  function trickyPool() {
+    var pool = [];
+    facts.order.forEach(function (k) {
+      var f = facts.map[k];
+      if (f[0] > f[1] && f.length > 5) pool.push({ text: k, answer: f[5] });
+    });
+    return shuffleArr(pool).slice(0, 12);
+  }
+  // 50/50: one of your real missed questions, or a fresh one for the weak operation
+  function gameQuestion() {
+    if (game.pool.length && Math.random() < 0.5) {
+      var item = game.pool[game.poolIdx % game.pool.length];
+      game.poolIdx++;
+      return { text: item.text, answer: item.answer };
+    }
+    var pair = genPair(game.op, gameLevel(game.op));
+    return { text: pair[0] + ' ' + game.op + ' ' + pair[1], answer: pair[2] };
+  }
   function makeChoices(ans) {
     var out = [ans];
     var offs = shuffleArr([1, -1, 2, -2, 3, -3, 10, -10, 5, -5]);
@@ -1603,7 +1659,7 @@
   }
   function startGame(type, op) {
     clearInterval(clockTimer);
-    game = { type: type, op: op, round: 0, score: 0, total: type === 'tof' ? 12 : 10, answer: 0, locked: false };
+    game = { type: type, op: op, round: 0, score: 0, total: type === 'tof' ? 12 : 10, answer: 0, locked: false, pool: trickyPool(), poolIdx: 0 };
     miniTitle.textContent = gameTitle(type, op);
     miniEnd.classList.add('hidden');
     miniFeedback.textContent = '';
@@ -1628,12 +1684,12 @@
     if (game.round >= game.total) { endGame(); return; }
     game.round++;
     miniProgress.textContent = 'Question ' + game.round + ' of ' + game.total + ' · Score ' + game.score;
-    var pair = genPair(game.op, gameLevel(game.op));
-    var a = pair[0], b = pair[1], ans = pair[2];
+    var q = gameQuestion();
+    var ans = q.answer;
     miniAnswers.innerHTML = '';
     if (game.type === 'pop') {
       game.answer = ans;
-      miniQuestion.textContent = a + ' ' + game.op + ' ' + b + ' = ?';
+      miniQuestion.textContent = q.text + ' = ?';
       makeChoices(ans).forEach(function (val) {
         ansButton(val, function () { pickPop(this, val); });
       });
@@ -1647,7 +1703,7 @@
         }
       }
       game.answer = (shown === ans);
-      miniQuestion.textContent = a + ' ' + game.op + ' ' + b + ' = ' + shown + '?';
+      miniQuestion.textContent = q.text + ' = ' + shown + '?';
       ansButton('True', function () { pickTof(this, true, ans); });
       ansButton('False', function () { pickTof(this, false, ans); });
     }
@@ -1703,9 +1759,9 @@
     }, 200);
   }
   function clockQuestion() {
-    var pair = genPair(game.op, gameLevel(game.op));
-    game.answer = pair[2];
-    miniQuestion.textContent = pair[0] + ' ' + game.op + ' ' + pair[1] + ' = ?';
+    var q = gameQuestion();
+    game.answer = q.answer;
+    miniQuestion.textContent = q.text + ' = ?';
     miniInput.value = '';
   }
   function clockCheck() {
@@ -1749,8 +1805,8 @@
   document.getElementById('miniAgain').addEventListener('click', function () { startGame(game.type, game.op); });
   document.getElementById('miniBack').addEventListener('click', function () {
     clearInterval(clockTimer);
-    renderCheck();
-    showView(checkView);
+    renderGraph();
+    showView(graphView);
   });
 
   // --- keep everything on screen when the mobile keyboard opens ---
