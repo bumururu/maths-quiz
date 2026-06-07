@@ -1609,8 +1609,9 @@
   var miniEnd = document.getElementById('miniEnd');
   var game = { type: 'pop', op: '×', round: 0, score: 0, total: 10, answer: 0, locked: false };
   var clockTimer = null, clockEndAt = 0;
-  var CLOCK_BEST_KEY = 'mathsQuizClockBest';
-  var clockBest = loadJSON(CLOCK_BEST_KEY, {});
+  var BESTS_KEY = 'mathsQuizBests';   // best score per game type + operation
+  var bests = loadJSON(BESTS_KEY, {});
+  function bestKey() { return game.type + '|' + game.op; }
 
   function shuffleArr(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -1685,7 +1686,8 @@
     miniFeedback.textContent = '';
     if (game.round >= game.total) { endGame(); return; }
     game.round++;
-    miniProgress.textContent = 'Question ' + game.round + ' of ' + game.total + ' · Score ' + game.score;
+    var bestTxt = bests[bestKey()] ? ' · Best ' + bests[bestKey()] : '';
+    miniProgress.textContent = 'Question ' + game.round + ' of ' + game.total + ' · Score ' + game.score + bestTxt;
     var q = gameQuestion();
     var ans = q.answer;
     miniAnswers.innerHTML = '';
@@ -1756,7 +1758,7 @@
     miniInput.focus();
     clockTimer = setInterval(function () {
       var left = Math.max(0, clockEndAt - Date.now());
-      var bestTxt = clockBest[game.op] ? ' · Best ' + clockBest[game.op] : '';
+      var bestTxt = bests[bestKey()] ? ' · Best ' + bests[bestKey()] : '';
       miniProgress.textContent = Math.ceil(left / 1000) + 's left · Score ' + game.score + bestTxt;
       if (!left) { clearInterval(clockTimer); endGame(); }
     }, 200);
@@ -1790,13 +1792,13 @@
     miniClockRow.classList.add('hidden');
     miniAnswers.innerHTML = '';
     var great, msg;
+    var prevBest = bests[bestKey()] || 0;
+    var newBest = game.score > 0 && game.score > prevBest;
+    if (newBest) {
+      bests[bestKey()] = game.score;
+      saveJSON(BESTS_KEY, bests);
+    }
     if (game.type === 'clock') {
-      var prevBest = clockBest[game.op] || 0;
-      var newBest = game.score > 0 && game.score > prevBest;
-      if (newBest) {
-        clockBest[game.op] = game.score;
-        saveJSON(CLOCK_BEST_KEY, clockBest);
-      }
       miniProgress.textContent = 'Time’s up!';
       miniQuestion.textContent = game.score + ' answered!';
       great = newBest;
@@ -1811,6 +1813,10 @@
       great = game.score >= game.total * 0.8;
       msg = great ? 'Brilliant! Monty is dancing!' :
         (game.score >= game.total * 0.5 ? 'Good work — one more go?' : 'Tricky! Read Monty’s tips and try again.');
+      if (newBest && prevBest) msg += ' New best — you beat your ' + prevBest + '!';
+      else if (newBest) msg += ' That’s your best score so far!';
+      else if (prevBest && game.score === prevBest) msg += ' You matched your best of ' + prevBest + '!';
+      else if (prevBest) msg += ' Your best is ' + prevBest + '.';
     }
     miniFeedback.textContent = msg;
     miniEnd.classList.remove('hidden');
