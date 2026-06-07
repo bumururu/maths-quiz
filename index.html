@@ -210,7 +210,7 @@
   .gold-btn:hover { background: #ddc078; }
   .gold-btn:active { transform: translateY(4px); box-shadow: #9c7f3c 0 1px 0 0; }
   .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
-  .meta-row { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
   .meta-btn {
     font-family: 'Nunito', system-ui, sans-serif;
     font-weight: 800;
@@ -223,6 +223,9 @@
     cursor: pointer;
   }
   .meta-btn:hover { border-color: #89cff0; }
+  .duel-turn { font-family: 'Chango', 'Bree Serif', serif; font-size: 22px; min-height: 28px; }
+  .duel-turn.p1 { color: #0075d4; }
+  .duel-turn.p2 { color: #e3928b; }
   .start-btn {
     display: inline-flex;
     align-items: center;
@@ -725,11 +728,13 @@
     </div>
     <div class="btn-row">
       <button class="blue-btn small" id="checkBtnStart" type="button">Let's Check!</button>
+      <button class="blue-btn small" id="duelBtn" type="button">2-Player Duel</button>
     </div>
     <div class="meta-row">
       <button class="meta-btn" id="playerBtn" type="button"></button>
       <button class="meta-btn" id="soundBtn" type="button"></button>
       <button class="meta-btn" id="musicBtn" type="button"></button>
+      <button class="meta-btn" id="volBtn" type="button"></button>
     </div>
   </div>
 
@@ -821,6 +826,22 @@
     </div>
   </div>
 
+  <!-- 2-Player Duel screen -->
+  <div id="duelView" class="hidden">
+    <h2 class="check-title">2-Player Duel</h2>
+    <div class="mini-progress" id="duelProgress"></div>
+    <div class="duel-turn" id="duelTurn"></div>
+    <div class="question" id="duelQuestion"></div>
+    <div class="answer-row" id="duelRow">
+      <input type="text" id="duelInput" inputmode="numeric" autocomplete="off">
+      <button class="check-btn" id="duelGo" type="button">Go</button>
+    </div>
+    <div class="feedback correct" id="duelFeedback"></div>
+    <div class="check-actions">
+      <button class="blue-btn hidden" id="duelAgain" type="button">Play Again</button>
+      <button class="back-btn" id="duelBack" type="button">Back</button>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -1632,7 +1653,7 @@
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, graphView, miniView, playersView, dailyView].forEach(function (el) { el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView].forEach(function (el) { el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -1940,13 +1961,18 @@
   // ===================== Sounds (synthesised, no files) =====================
   var SOUND_KEY = 'mathsQuizSound';
   var soundOn = loadJSON(SOUND_KEY, true) !== false;
+  var VOL_KEY = 'mathsQuizVolume';
+  var VOL_LEVELS = { low: 0.35, medium: 0.65, high: 1 };
+  var volLevel = loadJSON(VOL_KEY, 'high');
+  if (!VOL_LEVELS[volLevel]) volLevel = 'high';
+  function volMult() { return VOL_LEVELS[volLevel]; }
   var actx = null;
   function tone(freq, at, dur, type, vol) {
     var o = actx.createOscillator(), g = actx.createGain();
     o.type = type || 'sine';
     o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, at);
-    g.gain.linearRampToValueAtTime(vol || 0.15, at + 0.015);
+    g.gain.linearRampToValueAtTime((vol || 0.15) * volMult(), at + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
     o.connect(g);
     g.connect(actx.destination);
@@ -1972,12 +1998,26 @@
   var musicOn = loadJSON(MUSIC_KEY, true) !== false;
   var musicTimer = null, musicGain = null, musicStep = 0, nextNoteTime = 0, noiseBuf = null;
   var MTEMPO = 0.163;   // seconds per 16th note (~92 BPM)
-  // two bars of syncopated F-minor-ish bass, 0 = rest
-  var BASS = [
-    87, 0, 0, 87, 0, 87, 0, 98, 0, 0, 104, 0, 98, 0, 87, 0,
-    87, 0, 0, 87, 0, 87, 0, 98, 0, 104, 0, 117, 0, 104, 98, 0
+  var LOOPLEN = 128;    // 8 bars: Am7 → Fmaj7 → Cmaj7 → G7
+  var PROG = [
+    { root: 110.00, pad: [220.00, 261.63, 329.63, 392.00] },
+    { root: 87.31,  pad: [174.61, 220.00, 261.63, 329.63] },
+    { root: 130.81, pad: [261.63, 329.63, 392.00, 493.88] },
+    { root: 98.00,  pad: [196.00, 246.94, 293.66, 349.23] }
   ];
-  var CHORD_STEPS = { 4: [349, 415, 523], 12: [349, 440, 523], 20: [349, 415, 523], 28: [392, 466, 587] };
+  // funky one-bar bass riff: [step in bar, multiple of chord root, length in 16ths]
+  var BASS_PAT = [[0, 1, 2], [3, 1, 1], [6, 1.5, 2], [10, 2, 1], [12, 1, 2], [14, 1.782, 1]];
+  // gentle pentatonic lead melody across the 8-bar loop: [step, frequency, length in 16ths]
+  var LEAD = [
+    [2, 523.25, 2], [6, 587.33, 2], [10, 659.25, 4], [20, 587.33, 2], [24, 523.25, 2], [28, 440.00, 4],
+    [34, 523.25, 2], [38, 587.33, 2], [42, 659.25, 4], [52, 783.99, 2], [56, 659.25, 2], [60, 587.33, 4],
+    [66, 659.25, 2], [70, 587.33, 2], [74, 523.25, 4], [84, 587.33, 2], [88, 659.25, 2], [92, 783.99, 4],
+    [98, 783.99, 2], [102, 659.25, 2], [106, 587.33, 2], [110, 523.25, 2], [114, 440.00, 2], [118, 493.88, 2], [122, 523.25, 5]
+  ];
+  var LEAD_AT = {};
+  (function () {
+    for (var i = 0; i < LEAD.length; i++) LEAD_AT[LEAD[i][0]] = [LEAD[i][1], LEAD[i][2]];
+  })();
   function ensureAudio() {
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
@@ -1993,49 +2033,114 @@
     for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     return noiseBuf;
   }
-  function mTone(freq, at, dur, type, vol) {
+  function drumKick(at) {
     var o = actx.createOscillator(), g = actx.createGain();
-    o.type = type;
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(0.0001, at);
-    g.gain.linearRampToValueAtTime(vol, at + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(110, at);
+    o.frequency.exponentialRampToValueAtTime(43, at + 0.11);
+    g.gain.setValueAtTime(0.1, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.13);
     o.connect(g);
+    g.connect(musicGain);
+    o.start(at);
+    o.stop(at + 0.16);
+  }
+  function drumSnare(at) {
+    var src = actx.createBufferSource(), g = actx.createGain(), bp = actx.createBiquadFilter();
+    src.buffer = mkNoise();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1800;
+    bp.Q.value = 0.8;
+    g.gain.setValueAtTime(0.05, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.11);
+    src.connect(bp);
+    bp.connect(g);
+    g.connect(musicGain);
+    src.start(at);
+    src.stop(at + 0.12);
+    var o = actx.createOscillator(), og = actx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = 190;
+    og.gain.setValueAtTime(0.03, at);
+    og.gain.exponentialRampToValueAtTime(0.0001, at + 0.07);
+    o.connect(og);
+    og.connect(musicGain);
+    o.start(at);
+    o.stop(at + 0.09);
+  }
+  function drumHat(at, open) {
+    var src = actx.createBufferSource(), g = actx.createGain(), hp = actx.createBiquadFilter();
+    src.buffer = mkNoise();
+    hp.type = 'highpass';
+    hp.frequency.value = 6500;
+    g.gain.setValueAtTime(open ? 0.02 : 0.012, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + (open ? 0.16 : 0.035));
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(musicGain);
+    src.start(at);
+    src.stop(at + (open ? 0.18 : 0.05));
+  }
+  function pluck(freq, at, dur, vol) {   // bass-guitar pluck
+    var o = actx.createOscillator(), g = actx.createGain(), lp = actx.createBiquadFilter();
+    o.type = 'triangle';
+    o.frequency.value = freq;
+    lp.type = 'lowpass';
+    lp.frequency.value = 700;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(lp);
+    lp.connect(g);
     g.connect(musicGain);
     o.start(at);
     o.stop(at + dur + 0.05);
   }
-  function scheduleStep(step, at) {
-    var s = step % 32, i;
-    if (s % 8 === 0) {   // soft kick thump
+  function leadNote(freq, at, dur) {   // soft guitar-style lead
+    var o = actx.createOscillator(), g = actx.createGain(), lp = actx.createBiquadFilter();
+    o.type = 'sawtooth';
+    o.frequency.value = freq;
+    lp.type = 'lowpass';
+    lp.frequency.value = 1400;
+    lp.Q.value = 0.7;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.linearRampToValueAtTime(0.045, at + 0.03);
+    g.gain.setValueAtTime(0.045, at + Math.max(0.04, dur - 0.12));
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(lp);
+    lp.connect(g);
+    g.connect(musicGain);
+    o.start(at);
+    o.stop(at + dur + 0.05);
+  }
+  function padChord(notes, at, vol) {   // warm sustained chord
+    for (var i = 0; i < notes.length; i++) {
       var o = actx.createOscillator(), g = actx.createGain();
       o.type = 'sine';
-      o.frequency.setValueAtTime(120, at);
-      o.frequency.exponentialRampToValueAtTime(45, at + 0.1);
-      g.gain.setValueAtTime(0.09, at);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.12);
+      o.frequency.value = notes[i] * (i % 2 ? 1.003 : 0.997);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.linearRampToValueAtTime(vol, at + 0.18);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 1.7);
       o.connect(g);
       g.connect(musicGain);
       o.start(at);
-      o.stop(at + 0.15);
+      o.stop(at + 1.8);
     }
-    if (s % 2 === 0 && s % 8 !== 0) {   // whispery swung hats
-      var src = actx.createBufferSource(), hg = actx.createGain(), hp = actx.createBiquadFilter();
-      src.buffer = mkNoise();
-      hp.type = 'highpass';
-      hp.frequency.value = 6000;
-      hg.gain.setValueAtTime(s % 4 === 2 ? 0.025 : 0.012, at);
-      hg.gain.exponentialRampToValueAtTime(0.0001, at + 0.04);
-      src.connect(hp);
-      hp.connect(hg);
-      hg.connect(musicGain);
-      src.start(at);
-      src.stop(at + 0.05);
+  }
+  function scheduleStep(step, at) {
+    var s = step % LOOPLEN;
+    var b = s % 16;
+    var chord = PROG[Math.floor(s / 32)];
+    if (b === 0 || b === 7 || b === 10) drumKick(at);
+    if (b === 4 || b === 12) drumSnare(at);
+    if (s % 2 === 0 && b !== 0 && b !== 4 && b !== 12) drumHat(at, b === 14);
+    for (var i = 0; i < BASS_PAT.length; i++) {
+      if (BASS_PAT[i][0] === b) pluck(chord.root * BASS_PAT[i][1], at, BASS_PAT[i][2] * MTEMPO + 0.1, 0.15);
     }
-    var b = BASS[s];
-    if (b) mTone(b, at, 0.22, 'triangle', 0.16);
-    var ch = CHORD_STEPS[s];
-    if (ch) for (i = 0; i < ch.length; i++) mTone(ch[i], at, 0.3, 'sine', 0.03);
+    if (s % 32 === 0) padChord(chord.pad, at, 0.022);
+    else if (s % 32 === 16) padChord(chord.pad, at, 0.012);
+    var L = LEAD_AT[s];
+    if (L) leadNote(L[0], at, L[1] * MTEMPO + 0.12);
   }
   function musicLoop() {
     while (nextNoteTime < actx.currentTime + 0.25) {
@@ -2052,7 +2157,7 @@
     }
     musicGain.gain.cancelScheduledValues(actx.currentTime);
     musicGain.gain.setValueAtTime(0.0001, actx.currentTime);
-    musicGain.gain.linearRampToValueAtTime(0.55, actx.currentTime + 1.5);
+    musicGain.gain.linearRampToValueAtTime(0.5 * volMult(), actx.currentTime + 1.5);
     musicStep = 0;
     nextNoteTime = actx.currentTime + 0.1;
     musicTimer = setInterval(musicLoop, 100);
@@ -2077,10 +2182,12 @@
   var playerBtn = document.getElementById('playerBtn');
   var soundBtn = document.getElementById('soundBtn');
   var musicBtn = document.getElementById('musicBtn');
+  var volBtn = document.getElementById('volBtn');
   function refreshMeta() {
     playerBtn.textContent = 'Playing: ' + player;
     soundBtn.textContent = soundOn ? 'Sound: On' : 'Sound: Off';
     musicBtn.textContent = musicOn ? 'Music: On' : 'Music: Off';
+    volBtn.textContent = 'Volume: ' + volLevel.charAt(0).toUpperCase() + volLevel.slice(1);
   }
   refreshMeta();
   soundBtn.addEventListener('click', function () {
@@ -2095,6 +2202,17 @@
     refreshMeta();
     if (musicOn) startMusic();
     else stopMusic();
+  });
+  volBtn.addEventListener('click', function () {
+    volLevel = volLevel === 'high' ? 'medium' : (volLevel === 'medium' ? 'low' : 'high');
+    saveJSON(VOL_KEY, volLevel);
+    refreshMeta();
+    if (musicTimer && musicGain && actx) {
+      musicGain.gain.cancelScheduledValues(actx.currentTime);
+      musicGain.gain.setValueAtTime(Math.max(musicGain.gain.value, 0.0001), actx.currentTime);
+      musicGain.gain.linearRampToValueAtTime(0.5 * volMult(), actx.currentTime + 0.3);
+    }
+    sfx('right');
   });
   function renderPlayers() {
     var list = document.getElementById('playerList');
@@ -2238,6 +2356,88 @@
   dailyInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') dailyAnswer(); });
   dailyInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
   document.getElementById('dailyBack').addEventListener('click', function () { showView(startView); });
+
+  // ===================== 2-Player Duel: pass the phone! =====================
+  var duelView = document.getElementById('duelView');
+  var duelProgress = document.getElementById('duelProgress');
+  var duelTurn = document.getElementById('duelTurn');
+  var duelQuestionEl = document.getElementById('duelQuestion');
+  var duelInput = document.getElementById('duelInput');
+  var duelRow = document.getElementById('duelRow');
+  var duelFeedback = document.getElementById('duelFeedback');
+  var duelAgainBtn = document.getElementById('duelAgain');
+  var DUEL_NAMES = ['Blue Panda', 'Red Panda'];
+  var duel = { round: 0, total: 10, scores: [0, 0], turn: 0, answer: 0, active: false, waiting: false };
+
+  function startDuel() {
+    duel.round = 0; duel.scores = [0, 0]; duel.active = true; duel.waiting = false;
+    duelAgainBtn.classList.add('hidden');
+    duelRow.classList.remove('hidden');
+    duelFeedback.textContent = '';
+    showView(duelView);
+    nextDuel();
+  }
+  function nextDuel() {
+    duel.waiting = false;
+    if (duel.round >= duel.total) { endDuel(); return; }
+    duel.turn = duel.round % 2;
+    var q = genQuestion();
+    duel.answer = q.answer;
+    duelProgress.textContent = 'Blue ' + duel.scores[0] + ' — ' + duel.scores[1] + ' Red · Question ' + (duel.round + 1) + ' of ' + duel.total;
+    duelTurn.textContent = DUEL_NAMES[duel.turn] + ', your turn — pass the screen!';
+    duelTurn.className = 'duel-turn ' + (duel.turn ? 'p2' : 'p1');
+    duelQuestionEl.textContent = q.text + ' = ?';
+    duelInput.value = '';
+    duelFeedback.textContent = '';
+    duelInput.focus();
+    fitToViewport();
+  }
+  function duelAnswer() {
+    if (!duel.active || duel.waiting) return;
+    var raw = duelInput.value.trim();
+    if (raw === '' || isNaN(Number(raw))) return;
+    duel.waiting = true;
+    var right = Number(raw) === duel.answer;
+    if (right) {
+      duel.scores[duel.turn]++;
+      sfx('right');
+      celebrate();
+      duelFeedback.textContent = pick(praise) + ' Point to ' + DUEL_NAMES[duel.turn] + '!';
+    } else {
+      sfx('wrong');
+      duelFeedback.textContent = 'It was ' + duel.answer + '!';
+    }
+    duel.round++;
+    setTimeout(nextDuel, right ? 900 : 1400);
+  }
+  function endDuel() {
+    duel.active = false;
+    duelRow.classList.add('hidden');
+    duelTurn.textContent = '';
+    duelTurn.className = 'duel-turn';
+    duelProgress.textContent = 'Final score';
+    duelQuestionEl.textContent = duel.scores[0] + ' — ' + duel.scores[1];
+    if (duel.scores[0] === duel.scores[1]) {
+      duelFeedback.textContent = 'It’s a draw — rematch?';
+      sfx('end');
+    } else {
+      var w = duel.scores[0] > duel.scores[1] ? 0 : 1;
+      duelFeedback.textContent = DUEL_NAMES[w] + ' wins! Monty is dancing!';
+      sfx('fanfare');
+      pandaDance();
+    }
+    duelAgainBtn.classList.remove('hidden');
+    fitToViewport();
+  }
+  document.getElementById('duelBtn').addEventListener('click', startDuel);
+  document.getElementById('duelGo').addEventListener('click', duelAnswer);
+  duelInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') duelAnswer(); });
+  duelInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
+  duelAgainBtn.addEventListener('click', startDuel);
+  document.getElementById('duelBack').addEventListener('click', function () {
+    duel.active = false;
+    showView(startView);
+  });
 
   // --- keep everything on screen when the mobile keyboard opens ---
   var appWrap = document.getElementById('appWrap');
