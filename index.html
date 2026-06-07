@@ -1609,6 +1609,8 @@
   var miniEnd = document.getElementById('miniEnd');
   var game = { type: 'pop', op: '×', round: 0, score: 0, total: 10, answer: 0, locked: false };
   var clockTimer = null, clockEndAt = 0;
+  var CLOCK_BEST_KEY = 'mathsQuizClockBest';
+  var clockBest = loadJSON(CLOCK_BEST_KEY, {});
 
   function shuffleArr(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -1754,7 +1756,8 @@
     miniInput.focus();
     clockTimer = setInterval(function () {
       var left = Math.max(0, clockEndAt - Date.now());
-      miniProgress.textContent = Math.ceil(left / 1000) + 's left · Score ' + game.score;
+      var bestTxt = clockBest[game.op] ? ' · Best ' + clockBest[game.op] : '';
+      miniProgress.textContent = Math.ceil(left / 1000) + 's left · Score ' + game.score + bestTxt;
       if (!left) { clearInterval(clockTimer); endGame(); }
     }, 200);
   }
@@ -1786,18 +1789,30 @@
   function endGame() {
     miniClockRow.classList.add('hidden');
     miniAnswers.innerHTML = '';
-    var great;
+    var great, msg;
     if (game.type === 'clock') {
+      var prevBest = clockBest[game.op] || 0;
+      var newBest = game.score > 0 && game.score > prevBest;
+      if (newBest) {
+        clockBest[game.op] = game.score;
+        saveJSON(CLOCK_BEST_KEY, clockBest);
+      }
       miniProgress.textContent = 'Time’s up!';
       miniQuestion.textContent = game.score + ' answered!';
-      great = game.score >= 10;
+      great = newBest;
+      if (newBest && prevBest) msg = 'New best — you beat your ' + prevBest + '! Monty is dancing!';
+      else if (newBest) msg = 'That’s your best score — try to beat it next time!';
+      else if (prevBest && game.score === prevBest) msg = 'You matched your best of ' + prevBest + ' — so close to a record!';
+      else if (prevBest) msg = 'Your best is ' + prevBest + ' — can you beat it?';
+      else msg = 'Have another go and set your best score!';
     } else {
       miniProgress.textContent = 'All done!';
       miniQuestion.textContent = game.score + ' / ' + game.total;
       great = game.score >= game.total * 0.8;
+      msg = great ? 'Brilliant! Monty is dancing!' :
+        (game.score >= game.total * 0.5 ? 'Good work — one more go?' : 'Tricky! Read Monty’s tips and try again.');
     }
-    miniFeedback.textContent = great ? 'Brilliant! Monty is dancing!' :
-      (game.score >= game.total * 0.5 ? 'Good work — one more go?' : 'Tricky! Read Monty’s tips and try again.');
+    miniFeedback.textContent = msg;
     miniEnd.classList.remove('hidden');
     if (great) pandaDance();
     fitToViewport();
