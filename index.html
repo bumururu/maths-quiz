@@ -223,40 +223,6 @@
     cursor: pointer;
   }
   .meta-btn:hover { border-color: #89cff0; }
-  .sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 14px; }
-  .sticker { background: #eef5fc; border-radius: 14px; padding: 10px 6px; }
-  .sticker .face {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    margin: 0 auto 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30px;
-    background: #d0ecff;
-  }
-  .sticker.locked .face { background: #c3cdd8; color: #fff; font-family: 'Chango', 'Bree Serif', serif; font-size: 26px; }
-  .sticker .s-name { font-family: 'Nunito', system-ui, sans-serif; font-size: 12px; font-weight: 800; color: #36884d; }
-  .sticker .s-hint { font-family: 'Nunito', system-ui, sans-serif; font-size: 10px; color: #5b7c99; font-weight: 700; margin-top: 2px; }
-  #stickerToast {
-    position: fixed;
-    left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%) translateY(90px);
-    background: #36884d;
-    color: #fff;
-    font-family: 'Chango', 'Bree Serif', serif;
-    font-size: 16px;
-    padding: 12px 22px;
-    border-radius: 999px;
-    z-index: 90;
-    opacity: 0;
-    transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-  }
-  #stickerToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .start-btn {
     display: inline-flex;
     align-items: center;
@@ -646,8 +612,6 @@
     .gold-btn { font-size: 15px; }
     .game-btn { font-size: 13px; padding: 9px 11px; }
     .tipbox li { font-size: 12px; }
-    .sticker .face { width: 44px; height: 44px; font-size: 24px; }
-    .sticker .s-hint { font-size: 9px; }
     .card { padding: 18px 16px; border-radius: 18px; }
     .stats { margin-bottom: 8px; gap: 8px; }
     .stat { padding: 7px 6px; border-radius: 11px; }
@@ -761,7 +725,6 @@
     </div>
     <div class="btn-row">
       <button class="blue-btn small" id="checkBtnStart" type="button">Let's Check!</button>
-      <button class="blue-btn small" id="stickersBtn" type="button">My Stickers</button>
     </div>
     <div class="meta-row">
       <button class="meta-btn" id="playerBtn" type="button"></button>
@@ -857,15 +820,6 @@
     </div>
   </div>
 
-  <!-- Sticker book screen -->
-  <div id="stickersView" class="hidden">
-    <h2 class="check-title">My Stickers</h2>
-    <div class="mini-progress" id="stickerCount"></div>
-    <div class="sticker-grid" id="stickerGrid"></div>
-    <div class="check-actions">
-      <button class="back-btn" id="stickersBack" type="button">Back</button>
-    </div>
-  </div>
 </div>
 </div>
 
@@ -951,7 +905,6 @@
   <div class="m-honour">You're on a roll!</div>
   <div class="m-points" id="mPoints">10 in a row!</div>
 </div>
-<div id="stickerToast"></div>
 
 <script>
 (function () {
@@ -1457,7 +1410,6 @@
       answerEl.classList.add('shake');
       answerEl.select();
     }
-    checkStickers();
   }
 
   startBtn.addEventListener('click', function () {
@@ -1679,7 +1631,7 @@
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, stickersView].forEach(function (el) { el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView, playersView, dailyView].forEach(function (el) { el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -1973,7 +1925,6 @@
     miniFeedback.textContent = msg;
     miniEnd.classList.remove('hidden');
     if (great) { sfx('fanfare'); pandaDance(); } else { sfx('end'); }
-    checkStickers();
     fitToViewport();
   }
   document.getElementById('miniAgain').addEventListener('click', function () { startGame(game.type, game.op); });
@@ -2164,109 +2115,12 @@
     dailyQuestionEl.textContent = daily.score + ' / 10';
     dailyFeedback.textContent = (daily.score >= 8 ? 'Brilliant! ' : '') + 'Everyone gets the same 10 questions today — compare with your friends!';
     if (daily.score >= 8) { sfx('fanfare'); pandaDance(); } else { sfx('end'); }
-    checkStickers();
   }
   document.getElementById('dailyBtn').addEventListener('click', openDaily);
   document.getElementById('dailyGo').addEventListener('click', dailyAnswer);
   dailyInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') dailyAnswer(); });
   dailyInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
   document.getElementById('dailyBack').addEventListener('click', function () { showView(startView); });
-
-  // ===================== My Stickers =====================
-  var STICKERS_KEY = 'mathsQuizStickers';
-  var earnedStickers = loadJSON(pfx(STICKERS_KEY), {});
-  var stickersView = document.getElementById('stickersView');
-  var STICKER_DEFS = [
-    { id: 'first', name: 'First Steps', emoji: '🐾', hint: 'Answer your first quiz question', cond: function (s) { return s.total >= 1; } },
-    { id: 'streak10', name: 'Top Hat Ten', emoji: '🎩', hint: 'Get 10 right in a row', cond: function (s) { return s.bestStreak >= 10; } },
-    { id: 'streak20', name: 'On Fire', emoji: '🔥', hint: 'Get 20 right in a row', cond: function (s) { return s.bestStreak >= 20; } },
-    { id: 'fifty', name: 'Fifty Club', emoji: '🐼', hint: 'Answer 50 questions', cond: function (s) { return s.total >= 50; } },
-    { id: 'hundred', name: 'Century Panda', emoji: '💯', hint: 'Answer 100 questions', cond: function (s) { return s.total >= 100; } },
-    { id: 'sharp', name: 'Sharpshooter', emoji: '🎯', hint: '90% right in one day (10+ answers)', cond: function (s) { return s.sharpDay; } },
-    { id: 'speedy', name: 'Speedy Bamboo', emoji: '⚡', hint: 'Score 12 in Beat the Clock', cond: function (s) { return s.clockBest >= 12; } },
-    { id: 'popstar', name: 'Pop Star', emoji: '🌟', hint: 'Get 10/10 in Pop Quiz', cond: function (s) { return s.popBest >= 10; } },
-    { id: 'truth', name: 'Fib Finder', emoji: '🕵️', hint: 'Get 12/12 in True or False', cond: function (s) { return s.tofBest >= 12; } },
-    { id: 'perfect', name: 'Perfect Day', emoji: '👑', hint: '10/10 on the Daily Challenge', cond: function (s) { return s.dailyBest >= 10; } },
-    { id: 'threedays', name: 'Habit Hero', emoji: '📅', hint: 'Play on 3 different days', cond: function (s) { return s.days >= 3; } },
-    { id: 'mixmaster', name: 'Mix Master', emoji: '🌈', hint: 'Try all four operations', cond: function (s) { return s.allOps; } }
-  ];
-  function stickerStats() {
-    var s = opTotals();
-    var total = 0, allOps = true;
-    OP_ORDER.forEach(function (o) { total += s[o].t; if (!s[o].t) allOps = false; });
-    var sharpDay = false;
-    Object.keys(history).forEach(function (k) {
-      var r = 0, t = 0;
-      OP_ORDER.forEach(function (o) { var c = history[k][o]; if (c) { r += c[0]; t += c[0] + c[1]; } });
-      if (t >= 10 && r / t >= 0.9) sharpDay = true;
-    });
-    function bestFor(type) {
-      var m = 0;
-      Object.keys(bests).forEach(function (k) { if (k.indexOf(type + '|') === 0 && bests[k] > m) m = bests[k]; });
-      return m;
-    }
-    var rec = loadJSON(pfx(DAILY_KEY), null);
-    return {
-      total: total,
-      days: Object.keys(history).length,
-      allOps: allOps,
-      sharpDay: sharpDay,
-      bestStreak: bestStreak,
-      clockBest: bestFor('clock'),
-      popBest: bestFor('pop'),
-      tofBest: bestFor('tof'),
-      dailyBest: rec && rec.best ? rec.best : 0
-    };
-  }
-  var toastTimer = null;
-  function showStickerToast(def) {
-    var toastEl = document.getElementById('stickerToast');
-    toastEl.textContent = 'Sticker unlocked: ' + def.emoji + ' ' + def.name + '!';
-    toastEl.classList.add('show');
-    sfx('best');
-    celebrate();
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2600);
-  }
-  function checkStickers() {
-    var st = stickerStats();
-    var delay = 0;
-    STICKER_DEFS.forEach(function (def) {
-      if (!earnedStickers[def.id] && def.cond(st)) {
-        earnedStickers[def.id] = todayKey();
-        saveJSON(pfx(STICKERS_KEY), earnedStickers);
-        setTimeout(function () { showStickerToast(def); }, 600 + delay);
-        delay += 2800;
-      }
-    });
-  }
-  function renderStickers() {
-    var grid = document.getElementById('stickerGrid');
-    var count = 0;
-    grid.innerHTML = '';
-    STICKER_DEFS.forEach(function (def) {
-      var got = !!earnedStickers[def.id];
-      if (got) count++;
-      var d = document.createElement('div');
-      d.className = 'sticker' + (got ? '' : ' locked');
-      var face = document.createElement('div');
-      face.className = 'face';
-      face.textContent = got ? def.emoji : '?';
-      var nm = document.createElement('div');
-      nm.className = 's-name';
-      nm.textContent = got ? def.name : '???';
-      var ht = document.createElement('div');
-      ht.className = 's-hint';
-      ht.textContent = def.hint;
-      d.appendChild(face);
-      d.appendChild(nm);
-      d.appendChild(ht);
-      grid.appendChild(d);
-    });
-    document.getElementById('stickerCount').textContent = count + ' / ' + STICKER_DEFS.length + ' collected';
-  }
-  document.getElementById('stickersBtn').addEventListener('click', function () { renderStickers(); showView(stickersView); });
-  document.getElementById('stickersBack').addEventListener('click', function () { showView(startView); });
 
   // --- keep everything on screen when the mobile keyboard opens ---
   var appWrap = document.getElementById('appWrap');
