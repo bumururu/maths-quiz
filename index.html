@@ -97,6 +97,10 @@
   .ops .op-rt  { background: #c2410c; }
   .ops .op-pct { background: #0d9488; }
   .ops .op-rnd { background: #7c5cff; }
+  .ops .op-money { background: #1b7a43; }
+  .ops .op-frac  { background: #9c4dcc; font-size: 16px; }
+  .ops .op-time  { background: #c25e00; font-size: 15px; }
+  .ops .op-word  { background: #3367c2; font-size: 15px; }
   .ops span.off { opacity: 0.32; filter: saturate(0.35); transform: scale(0.9); }
   .opts {
     display: flex;
@@ -847,6 +851,10 @@
     <span class="op-rt"  data-op="√"  role="button" tabindex="0" aria-pressed="false" aria-label="Square roots">&radic;</span>
     <span class="op-pct" data-op="%"  role="button" tabindex="0" aria-pressed="false" aria-label="Percentages">%</span>
     <span class="op-rnd" data-op="≈"  role="button" tabindex="0" aria-pressed="false" aria-label="Rounding">&asymp;</span>
+    <span class="op-money" data-op="£"  role="button" tabindex="0" aria-pressed="false" aria-label="Money">£</span>
+    <span class="op-frac"  data-op="½"  role="button" tabindex="0" aria-pressed="false" aria-label="Fractions">&frac12;</span>
+    <span class="op-time"  data-op="🕐" role="button" tabindex="0" aria-pressed="false" aria-label="Time">🕐</span>
+    <span class="op-word"  data-op="📖" role="button" tabindex="0" aria-pressed="false" aria-label="Word problems">📖</span>
   </div>
   <div class="ops-hint" id="opsHint">Tap to turn each one on or off</div>
   <div class="opts">
@@ -1296,7 +1304,7 @@
     hard:   { addMax: 99, subMin: 12, mulMax: 12, divMax: 144, singleProb: 0.15 }
   };
   var CORE_OPS = ['+', '−', '×', '÷'];
-  var SPECIAL_OPS = ['x²', '√', '%', '≈'];   // squares, roots, percentages, rounding
+  var SPECIAL_OPS = ['x²', '√', '%', '≈', '£', '½', '🕐', '📖'];   // squares, roots, %, rounding, money, fractions, time, word problems
   var OP_ORDER = CORE_OPS.concat(SPECIAL_OPS);
 
   function loadJSON(key, fallback) {
@@ -1687,6 +1695,40 @@
       var p = pick(pcts);
       return { text: p + '% of ' + base, answer: round2(p / 100 * base), ops: ['%'] };
     }
+    if (op === '£') {   // money: pounds & pence, answers in £
+      var capP = level === 'easy' ? 900 : level === 'medium' ? 2000 : 5000;
+      var mk = randInt(0, 2);
+      if (mk === 0) { var a1 = randInt(20, capP), b1 = randInt(20, capP); return { text: '£' + (a1 / 100).toFixed(2) + ' + £' + (b1 / 100).toFixed(2), answer: round2((a1 + b1) / 100), ops: ['£'] }; }
+      if (mk === 1) { var tot = pick(level === 'easy' ? [500, 1000] : level === 'medium' ? [1000, 2000] : [2000, 5000]); var spent = randInt(20, tot - 10); return { text: '£' + (tot / 100).toFixed(2) + ' − £' + (spent / 100).toFixed(2), answer: round2((tot - spent) / 100), ops: ['£'] }; }
+      var price = randInt(20, level === 'easy' ? 200 : level === 'medium' ? 500 : 900), qty = randInt(2, level === 'easy' ? 4 : 6);
+      return { text: '£' + (price / 100).toFixed(2) + ' × ' + qty, answer: round2(price * qty / 100), ops: ['£'] };
+    }
+    if (op === '½') {   // a fraction of an amount
+      var fracs = level === 'easy' ? [[1, 2], [1, 4], [1, 3]] : level === 'medium' ? [[1, 2], [1, 4], [3, 4], [1, 3], [1, 5], [2, 5]] : [[2, 3], [3, 4], [3, 5], [5, 8], [2, 7], [3, 8]];
+      var fr = pick(fracs), mult = randInt(2, level === 'easy' ? 6 : level === 'medium' ? 10 : 16), amt = fr[1] * mult;
+      return { text: fr[0] + '/' + fr[1] + ' of ' + amt, answer: round2(amt * fr[0] / fr[1]), ops: ['½'] };
+    }
+    if (op === '🕐') {   // time: minute intervals and hours → minutes
+      if (rng() < 0.5) {
+        var sh = randInt(1, 9), sm = pick([0, 5, 10, 15, 20, 25, 30, 35, 40, 45]);
+        var dur = pick(level === 'easy' ? [10, 15, 20, 30] : level === 'medium' ? [20, 25, 35, 40, 45, 50] : [35, 40, 50, 55, 70, 80, 90]);
+        var tot2 = sm + dur, eh = sh + Math.floor(tot2 / 60), em = tot2 % 60;
+        return { text: 'Minutes from ' + sh + ':' + (sm < 10 ? '0' + sm : sm) + ' to ' + eh + ':' + (em < 10 ? '0' + em : em), answer: dur, ops: ['🕐'] };
+      }
+      var hrs = randInt(1, level === 'easy' ? 3 : 5), half = level !== 'easy' && rng() < 0.4;
+      return { text: 'Minutes in ' + hrs + (half ? ' and a half' : '') + (hrs === 1 && !half ? ' hour' : ' hours'), answer: hrs * 60 + (half ? 30 : 0), ops: ['🕐'] };
+    }
+    if (op === '📖') {   // word problems (real-world sums)
+      var med = level !== 'easy', a2, b2, ans2, text2, wt = randInt(0, 6);
+      if (wt === 0) { a2 = randInt(2, med ? 9 : 6); b2 = randInt(2, med ? 9 : 5); ans2 = a2 * b2; text2 = a2 + ' packs of ' + b2 + ' cakes — how many cakes?'; }
+      else if (wt === 1) { var seats = pick(med ? [40, 50, 60] : [10, 20, 30]); var taken = randInt(5, seats - 3); ans2 = seats - taken; text2 = 'A bus has ' + seats + ' seats. ' + taken + ' are taken. How many are free?'; }
+      else if (wt === 2) { b2 = randInt(2, med ? 6 : 4); ans2 = randInt(2, med ? 9 : 6); a2 = b2 * ans2; text2 = a2 + ' sweets shared between ' + b2 + ' children — how many each?'; }
+      else if (wt === 3) { a2 = randInt(med ? 20 : 8, med ? 80 : 18); b2 = randInt(2, a2 - 1); ans2 = a2 - b2; text2 = 'A book has ' + a2 + ' pages. You read ' + b2 + '. How many are left?'; }
+      else if (wt === 4) { a2 = randInt(2, med ? 8 : 5); b2 = randInt(2, med ? 9 : 6); ans2 = a2 * b2; text2 = a2 + ' boxes with ' + b2 + ' pencils each — how many pencils?'; }
+      else if (wt === 5) { a2 = randInt(3, med ? 40 : 15); b2 = randInt(3, med ? 40 : 15); ans2 = a2 + b2; text2 = a2 + ' red and ' + b2 + ' blue balloons — how many altogether?'; }
+      else { b2 = randInt(2, med ? 6 : 4); ans2 = randInt(2, med ? 12 : 8); a2 = b2 * ans2; text2 = a2 + ' apples in ' + b2 + ' baskets — how many in each?'; }
+      return { text: text2, answer: ans2, ops: ['📖'] };
+    }
     // rounding (≈)
     var nn, ans, text;
     function twoDp(maxWhole) { var cc = randInt(1, 99); if (cc % 10 === 0) cc++; return round2(randInt(1, maxWhole) + cc / 100); }
@@ -1757,12 +1799,14 @@
     return genIntegerChain(cores, L);
   }
 
+  // worded questions already end in '?', so don't tack ' = ?' on the end of those
+  function qText(t) { return /\?\s*$/.test(t) ? t : t + ' = ?'; }
   function nextQuestion() {
     current = genQuestion();
     attempts = 0;
     locked = false;
     qnumEl.textContent = qnum;
-    questionEl.textContent = current.text + ' = ?';
+    questionEl.textContent = qText(current.text);
     answerEl.value = '';
     feedbackEl.textContent = '';
     feedbackEl.className = 'feedback';
@@ -1886,9 +1930,11 @@
   if (!facts.map) facts = { map: {}, order: [] };
 
   var OP_COLORS = { '+': '#0075d4', '−': '#07468b', '×': '#36884d', '÷': '#1b2435',
-                    'x²': '#b4519a', '√': '#c2410c', '%': '#0d9488', '≈': '#7c5cff' };
+                    'x²': '#b4519a', '√': '#c2410c', '%': '#0d9488', '≈': '#7c5cff',
+                    '£': '#1b7a43', '½': '#9c4dcc', '🕐': '#c25e00', '📖': '#3367c2' };
   var OP_NAMES = { '+': 'adding', '−': 'taking away', '×': 'times', '÷': 'sharing',
-                   'x²': 'squares', '√': 'square roots', '%': 'percentages', '≈': 'rounding' };
+                   'x²': 'squares', '√': 'square roots', '%': 'percentages', '≈': 'rounding',
+                   '£': 'money', '½': 'fractions', '🕐': 'time', '📖': 'word problems' };
   var TIPS = {
     '+': ['Make a ten first: 8 + 6 is 8 + 2 + 4 = 14',
           'Add the tens first, then the ones',
@@ -1910,7 +1956,15 @@
     '%': ['10% is just ÷ 10; 50% is half; 25% is half of a half',
           'Find 10% first, then build up: 30% is three lots of 10%'],
     '≈': ['Look at the next digit: 5 or more rounds up, 4 or less stays the same',
-          'To the nearest 10 the answer always ends in 0']
+          'To the nearest 10 the answer always ends in 0'],
+    '£': ['Add the pounds and the pence separately, then put them together',
+          'Change is what you had take away what you spent'],
+    '½': ['“of” means times: ¼ of 20 is the same as 20 ÷ 4',
+          'Find one part first, then build up to the rest'],
+    '🕐': ['There are 60 minutes in an hour',
+          'Count on from the start time to the end time in steps'],
+    '📖': ['Spot the important numbers, then choose + − × or ÷',
+          'Read it twice and ask: what is it really asking for?']
   };
 
   function todayKey() {
@@ -2335,7 +2389,7 @@
   // ===================== Boss Battle =====================
   // a fresh single question made from whichever symbols are switched on
   function quickQuestion() {
-    var enabled = activeCore().concat(activeSpecial());
+    var enabled = activeCore().concat(activeSpecial().filter(function (o) { return o !== '📖'; }));
     if (!enabled.length) enabled = CORE_OPS.slice();
     var op = pick(enabled);
     if (SPECIAL_OPS.indexOf(op) >= 0) { var sq = genSpecial(op, LEVELS[level]); return { text: sq.text, answer: sq.answer }; }
@@ -2541,8 +2595,8 @@
       return { text: item.text, answer: item.answer };
     }
     if (game.op === 'mix') {
-      // use exactly the symbols switched on — squares, roots, % and rounding included
-      var enabled = activeCore().concat(activeSpecial());
+      // use the symbols switched on, but not word problems (sentences don't fit the quick games)
+      var enabled = activeCore().concat(activeSpecial().filter(function (o) { return o !== '📖'; }));
       if (!enabled.length) enabled = CORE_OPS.slice();
       var mop = pick(enabled);
       if (SPECIAL_OPS.indexOf(mop) >= 0) { var sq = genSpecial(mop, LEVELS[level]); return { text: sq.text, answer: sq.answer }; }
@@ -3244,7 +3298,7 @@
     duelProgress.textContent = DUEL_NAMES[0] + ' ' + duel.scores[0] + ' — ' + duel.scores[1] + ' ' + DUEL_NAMES[1] + ' · Question ' + (duel.round + 1) + ' of ' + duel.total;
     duelTurn.textContent = DUEL_NAMES[duel.turn] + ', your turn — pass the screen!';
     duelTurn.className = 'duel-turn ' + (duel.turn ? 'p2' : 'p1');
-    duelQuestionEl.textContent = q.text + ' = ?';
+    duelQuestionEl.textContent = qText(q.text);
     duelInput.value = '';
     duelFeedback.textContent = '';
     duelInput.focus();
