@@ -221,6 +221,42 @@
   .badge.locked .b-name { color: #9bb0c1; }
   #toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: #1b2435; color: #fff; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 14px; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 60; box-shadow: 0 6px 18px rgba(0,0,0,0.25); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* Boss Battle */
+  .boss-btn {
+    font-family: 'Chango', 'Bree Serif', serif;
+    font-size: 17px;
+    background: #d4503f;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 20px 13px;
+    cursor: pointer;
+    box-shadow: #9c3526 0 5px 0 0;
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+  }
+  .boss-btn:hover { background: #e25c4a; }
+  .boss-stage { display: flex; justify-content: center; align-items: flex-end; min-height: 150px; margin: 4px 0 2px; }
+  .boss-svg { width: 168px; height: 144px; transform-origin: 50% 100%; transition: transform 0.4s, opacity 0.4s; }
+  .boss-svg.hit { animation: bossHit 0.36s; }
+  .boss-svg.defeated { transform: scale(0.15) rotate(45deg); opacity: 0; }
+  @keyframes bossHit {
+    0% { transform: translateX(0); filter: brightness(1); }
+    20% { transform: translateX(-9px) rotate(-3deg); filter: brightness(2.2) saturate(0.6); }
+    50% { transform: translateX(8px) rotate(2deg); filter: brightness(1); }
+    100% { transform: translateX(0); filter: brightness(1); }
+  }
+  .boss-hpbar { height: 16px; background: #e3eee6; border-radius: 8px; overflow: hidden; margin: 4px auto 0; max-width: 240px; }
+  .boss-hpfill { height: 100%; background: linear-gradient(90deg, #e3565a, #f0883f); border-radius: 8px; transition: width 0.3s; }
+  .boss-hearts { font-size: 22px; letter-spacing: 4px; margin: 6px 0 2px; }
+  /* Friends leaderboard */
+  .lb-coderow { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .lb-code { flex: 1; min-width: 0; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 12px; padding: 8px; border: 3px solid #d7e3f0; border-radius: 10px; color: #36884d; }
+  .lb-table { width: 100%; border-collapse: collapse; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 14px; }
+  .lb-table th { font-size: 11px; color: #9bb0c1; padding: 4px 3px; }
+  .lb-table td { padding: 7px 3px; text-align: center; color: #36884d; border-top: 2px solid #eef5fc; }
+  .lb-table td:nth-child(2), .lb-table th:nth-child(2) { text-align: left; }
+  .lb-me td { background: #eaf6ed; }
+  .lb-rm { background: none; border: none; color: #c2410c; font-weight: 800; cursor: pointer; font-size: 14px; }
   .ops-hint {
     font-family: 'Nunito', system-ui, sans-serif;
     font-weight: 800;
@@ -866,9 +902,13 @@
     <div>
       <button class="gold-btn" id="rewardsBtn" type="button">⭐ Rewards &amp; Wardrobe</button>
     </div>
+    <div>
+      <button class="boss-btn" id="bossBtn" type="button">⚔️ Boss Battle</button>
+    </div>
     <div class="btn-row">
       <button class="blue-btn small" id="checkBtnStart" type="button">Let's Check!</button>
       <button class="blue-btn small" id="duelBtn" type="button">2-Player Duel</button>
+      <button class="blue-btn small" id="leaderboardBtn" type="button">🏆 Leaderboard</button>
     </div>
     <div class="meta-row">
       <button class="meta-btn" id="playerBtn" type="button"></button>
@@ -1018,6 +1058,53 @@
     <div id="rewardsBody"></div>
     <div class="check-actions">
       <button class="back-btn" id="rewardsBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Boss Battle screen -->
+  <div id="bossView" class="hidden">
+    <h2 class="check-title">Boss Battle</h2>
+    <div class="check-note" id="bossProgress"></div>
+    <div class="boss-stage">
+      <svg id="bossSvg" class="boss-svg" viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M55 55 L40 18 L72 46 Z" fill="#6b3fa0"/>
+        <path d="M145 55 L160 18 L128 46 Z" fill="#6b3fa0"/>
+        <ellipse cx="100" cy="100" rx="62" ry="55" fill="#7c4dca"/>
+        <ellipse cx="100" cy="112" rx="44" ry="36" fill="#9166d6"/>
+        <circle cx="78" cy="88" r="16" fill="#fff"/>
+        <circle cx="122" cy="88" r="16" fill="#fff"/>
+        <circle cx="80" cy="92" r="8" fill="#1b2435"/>
+        <circle cx="120" cy="92" r="8" fill="#1b2435"/>
+        <circle cx="83" cy="89" r="2.6" fill="#fff"/>
+        <circle cx="123" cy="89" r="2.6" fill="#fff"/>
+        <path d="M62 70 L92 80" stroke="#3a1d63" stroke-width="5" stroke-linecap="round"/>
+        <path d="M138 70 L108 80" stroke="#3a1d63" stroke-width="5" stroke-linecap="round"/>
+        <path d="M72 120 q28 22 56 0 q-12 -9 -28 -9 q-16 0 -28 9 Z" fill="#3a1d63"/>
+        <polygon points="82,120 88,133 94,120" fill="#fff"/>
+        <polygon points="100,123 106,135 112,123" fill="#fff"/>
+        <polygon points="118,120 112,131 106,120" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="boss-hpbar"><div class="boss-hpfill" id="bossHpFill"></div></div>
+    <div class="boss-hearts" id="bossHearts"></div>
+    <div class="question" id="bossQuestion"></div>
+    <div class="answer-row" id="bossRow">
+      <input type="text" id="bossInput" inputmode="decimal" autocomplete="off">
+      <button class="check-btn" id="bossGo">Hit!</button>
+    </div>
+    <div class="feedback correct" id="bossFeedback"></div>
+    <div class="check-actions">
+      <button class="blue-btn hidden" id="bossAgain" type="button">Battle Again</button>
+      <button class="back-btn" id="bossBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Friends Leaderboard screen -->
+  <div id="leaderboardView" class="hidden">
+    <h2 class="check-title">Friends Leaderboard</h2>
+    <div id="leaderboardBody"></div>
+    <div class="check-actions">
+      <button class="back-btn" id="leaderboardBack" type="button">Back</button>
     </div>
   </div>
 </div>
@@ -1979,7 +2066,7 @@
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView, rewardsView].forEach(function (el) { if (el) el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView, rewardsView, bossView, leaderboardView].forEach(function (el) { if (el) el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -2058,7 +2145,11 @@
   var wardrobe = loadJSON(pfx(WARDROBE_KEY), { owned: {}, hat: null, acc: null });
   if (!wardrobe.owned) wardrobe.owned = {};
   var badges = loadJSON(pfx(BADGES_KEY), {});
+  var BOSSWINS_KEY = 'mathsQuizBossWins';
+  var bossWins = loadJSON(pfx(BOSSWINS_KEY), 0);
   var rewardsView = document.getElementById('rewardsView');
+  var bossView = document.getElementById('bossView');
+  var leaderboardView = document.getElementById('leaderboardView');
 
   function levelFromXP(x) { return Math.floor(x / 100) + 1; }
   function keyFor(dt) { var m = dt.getMonth() + 1, day = dt.getDate(); return dt.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day; }
@@ -2125,7 +2216,7 @@
     });
     var oc = 0;
     CORE_OPS.forEach(function (o) { if (Object.keys(history).some(function (dk) { return history[dk][o]; })) oc++; });
-    return { correct: cor, answered: ans, bestStreak: bestStreak, level: levelFromXP(xp), opsCount: oc, coinsEarned: coinsEarned, dayStreak: dayStreakCount(), owned: Object.keys(wardrobe.owned).length };
+    return { correct: cor, answered: ans, bestStreak: bestStreak, level: levelFromXP(xp), opsCount: oc, coinsEarned: coinsEarned, dayStreak: dayStreakCount(), owned: Object.keys(wardrobe.owned).length, bossWins: bossWins };
   }
 
   var BADGES_DEF = [
@@ -2138,7 +2229,8 @@
     { id: 'allops', icon: '🧮', name: 'All-Rounder', test: function (s) { return s.opsCount >= 4; } },
     { id: 'coins250', icon: '🪙', name: 'Coin Collector', test: function (s) { return s.coinsEarned >= 250; } },
     { id: 'week', icon: '📅', name: 'Week Warrior', test: function (s) { return s.dayStreak >= 7; } },
-    { id: 'dressed', icon: '🎩', name: 'Dapper Panda', test: function (s) { return s.owned >= 1; } }
+    { id: 'dressed', icon: '🎩', name: 'Dapper Panda', test: function (s) { return s.owned >= 1; } },
+    { id: 'boss', icon: '⚔️', name: 'Boss Slayer', test: function (s) { return s.bossWins >= 1; } }
   ];
   function earnedBadgeCount() { var n = 0; BADGES_DEF.forEach(function (b) { if (badges[b.id]) n++; }); return n; }
   function checkBadges(silent) {
@@ -2211,6 +2303,165 @@
   renderMontyOutfit();
   checkBadges(true);
   updateRewardStrip();
+
+  // ===================== Boss Battle =====================
+  // a fresh single question made from whichever symbols are switched on
+  function quickQuestion() {
+    var enabled = activeCore().concat(activeSpecial());
+    if (!enabled.length) enabled = CORE_OPS.slice();
+    var op = pick(enabled);
+    if (SPECIAL_OPS.indexOf(op) >= 0) { var sq = genSpecial(op, LEVELS[level]); return { text: sq.text, answer: sq.answer }; }
+    var pr = genPair(op, LEVELS[level]);
+    return { text: pr[0] + ' ' + op + ' ' + pr[1], answer: pr[2] };
+  }
+
+  var bossQuestionEl = document.getElementById('bossQuestion');
+  var bossInput = document.getElementById('bossInput');
+  var bossFeedback = document.getElementById('bossFeedback');
+  var bossHpFill = document.getElementById('bossHpFill');
+  var bossHearts = document.getElementById('bossHearts');
+  var bossProgress = document.getElementById('bossProgress');
+  var bossSvg = document.getElementById('bossSvg');
+  var bossRow = document.getElementById('bossRow');
+  var bossAgainBtn = document.getElementById('bossAgain');
+  var boss = { hp: 0, maxHp: 8, lives: 3, active: false, answer: 0, qStart: 0 };
+
+  function renderBossHud() {
+    bossHpFill.style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
+    var h = ''; for (var i = 0; i < 3; i++) h += (i < boss.lives ? '❤️' : '🤍');
+    bossHearts.textContent = h;
+    bossProgress.textContent = 'Boss HP ' + Math.max(0, boss.hp) + ' / ' + boss.maxHp;
+  }
+  function nextBoss() {
+    var q = quickQuestion();
+    boss.answer = q.answer;
+    bossQuestionEl.textContent = q.text + ' = ?';
+    bossInput.value = '';
+    boss.qStart = Date.now();
+    bossInput.focus();
+    fitToViewport();
+  }
+  function startBoss() {
+    boss = { hp: 8, maxHp: 8, lives: 3, active: true, answer: 0, qStart: 0 };
+    bossSvg.classList.remove('defeated');
+    bossAgainBtn.classList.add('hidden');
+    bossRow.classList.remove('hidden');
+    bossFeedback.textContent = '';
+    showView(bossView);
+    renderBossHud();
+    nextBoss();
+  }
+  function bossWin() {
+    boss.active = false;
+    bossSvg.classList.add('defeated');
+    bossRow.classList.add('hidden');
+    bossProgress.textContent = 'Victory!';
+    bossQuestionEl.textContent = 'You beat the boss! 🎉';
+    addCoins(60); addXP(30);
+    bossWins++; saveJSON(pfx(BOSSWINS_KEY), bossWins);
+    checkBadges(); updateRewardStrip();
+    bossFeedback.textContent = 'You earned 🪙 60 and 30 XP!';
+    bossFeedback.className = 'feedback correct';
+    sfx('fanfare'); celebrate(); pandaDance();
+    bossAgainBtn.classList.remove('hidden');
+  }
+  function bossLose() {
+    boss.active = false;
+    bossRow.classList.add('hidden');
+    bossProgress.textContent = 'Defeated…';
+    bossQuestionEl.textContent = 'The monster won this time!';
+    bossFeedback.textContent = 'So close — have another go, you’ve got this!';
+    bossFeedback.className = 'feedback wrong';
+    sfx('end'); sadMoment();
+    bossAgainBtn.classList.remove('hidden');
+  }
+  function bossCheck() {
+    if (!boss.active) return;
+    var raw = bossInput.value.trim();
+    if (raw === '' || isNaN(Number(raw))) return;
+    var fast = (Date.now() - boss.qStart) < 3500;
+    if (sameNum(Number(raw), boss.answer)) {
+      var dmg = fast ? 2 : 1;
+      boss.hp -= dmg;
+      bossSvg.classList.remove('hit'); void bossSvg.offsetWidth; bossSvg.classList.add('hit');
+      sfx('right'); celebrate();
+      bossFeedback.textContent = fast ? 'Critical hit! −' + dmg : 'Hit! −' + dmg;
+      bossFeedback.className = 'feedback correct';
+      renderBossHud();
+      if (boss.hp <= 0) { bossWin(); return; }
+    } else {
+      boss.lives--;
+      sfx('wrong'); sadMoment();
+      bossFeedback.textContent = 'Ouch! It was ' + boss.answer;
+      bossFeedback.className = 'feedback wrong';
+      renderBossHud();
+      if (boss.lives <= 0) { bossLose(); return; }
+    }
+    setTimeout(nextBoss, 900);
+  }
+  document.getElementById('bossBtn').addEventListener('click', startBoss);
+  document.getElementById('bossGo').addEventListener('click', bossCheck);
+  bossInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') bossCheck(); });
+  bossInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
+  bossAgainBtn.addEventListener('click', startBoss);
+  document.getElementById('bossBack').addEventListener('click', function () { updateRewardStrip(); showView(startView); });
+
+  // ===================== Friends Leaderboard (share codes, no server) =====================
+  var FRIENDS_KEY = 'mathsQuizFriends';
+  var friends = loadJSON(pfx(FRIENDS_KEY), []);
+  if (!Array.isArray(friends)) friends = [];
+  function myEntry() { return { n: player, l: levelFromXP(xp), x: xp, c: coins, s: bestStreak, d: dayStreakCount() }; }
+  function entryScore(e) { return (e.l || 1) * 100000 + (e.s || 0) * 1000 + (e.d || 0) * 10 + (e.x || 0) / 1000; }
+  function encodeEntry(e) { try { return 'MQ-' + btoa(unescape(encodeURIComponent(JSON.stringify(e)))); } catch (_) { return ''; } }
+  function decodeEntry(code) {
+    try {
+      code = (code || '').trim();
+      if (code.indexOf('MQ-') === 0) code = code.slice(3);
+      var o = JSON.parse(decodeURIComponent(escape(atob(code))));
+      if (o && typeof o.n === 'string') return { n: String(o.n).slice(0, 14), l: +o.l || 1, x: +o.x || 0, c: +o.c || 0, s: +o.s || 0, d: +o.d || 0 };
+    } catch (_) {}
+    return null;
+  }
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function renderLeaderboard() {
+    var me = myEntry(); me._me = true;
+    var rows = [me].concat(friends);
+    rows.sort(function (a, b) { return entryScore(b) - entryScore(a); });
+    var html = '<div class="rw-section"><div class="rw-h">Your code — share it with a friend</div><div class="lb-coderow"><input id="myCodeInput" class="lb-code" readonly value="' + esc(encodeEntry(myEntry())) + '"><button class="ward-btn" id="copyCodeBtn">Copy</button></div></div>';
+    html += '<div class="rw-section"><div class="rw-h">Add a friend’s code</div><div class="lb-coderow"><input id="friendCodeInput" class="lb-code" placeholder="Paste a code…"><button class="ward-btn" id="addFriendBtn">Add</button></div></div>';
+    html += '<div class="rw-h">Leaderboard</div><table class="lb-table"><tr><th>#</th><th>Name</th><th>Lvl</th><th>🔥</th><th>📅</th><th></th></tr>';
+    rows.forEach(function (e, i) {
+      var who = e._me ? esc(e.n) + ' (you)' : esc(e.n);
+      var rm = e._me ? '' : '<button class="lb-rm" data-i="' + friends.indexOf(e) + '">✕</button>';
+      html += '<tr' + (e._me ? ' class="lb-me"' : '') + '><td>' + (i + 1) + '</td><td>' + who + '</td><td>' + (e.l || 1) + '</td><td>' + (e.s || 0) + '</td><td>' + (e.d || 0) + '</td><td>' + rm + '</td></tr>';
+    });
+    html += '</table>';
+    document.getElementById('leaderboardBody').innerHTML = html;
+    document.getElementById('copyCodeBtn').addEventListener('click', function () {
+      var inp = document.getElementById('myCodeInput');
+      inp.select();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(inp.value).then(function () { toast('Code copied!'); }, function () { toast('Select the code and copy it'); });
+        } else { document.execCommand('copy'); toast('Code copied!'); }
+      } catch (_) { toast('Select the code and copy it'); }
+    });
+    document.getElementById('addFriendBtn').addEventListener('click', function () {
+      var inp = document.getElementById('friendCodeInput');
+      var e = decodeEntry(inp.value);
+      if (!e) { toast('That code didn’t work — check it and try again'); return; }
+      friends.push(e); saveJSON(pfx(FRIENDS_KEY), friends);
+      toast('Added ' + e.n + '!'); renderLeaderboard();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#leaderboardBody .lb-rm'), function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = +btn.getAttribute('data-i');
+        if (idx >= 0) { friends.splice(idx, 1); saveJSON(pfx(FRIENDS_KEY), friends); renderLeaderboard(); }
+      });
+    });
+  }
+  document.getElementById('leaderboardBtn').addEventListener('click', function () { renderLeaderboard(); showView(leaderboardView); });
+  document.getElementById('leaderboardBack').addEventListener('click', function () { showView(startView); });
 
   // --- three training games, all aimed at the weak spot ---
   var miniTitle = document.getElementById('miniTitle');
