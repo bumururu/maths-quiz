@@ -2018,7 +2018,7 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'game-btn';
-      b.innerHTML = '<span>' + d.name + ' (+ − × ÷)</span>' +
+      b.innerHTML = '<span>' + d.name + ' (' + activeOps().join(' ') + ')</span>' +
         (d.id === sg ? '<span class="pill">Monty suggests</span>' : '');
       b.addEventListener('click', function () { startGame(d.id, focus); });
       gameRow.appendChild(b);
@@ -2253,7 +2253,16 @@
       game.poolIdx++;
       return { text: item.text, answer: item.answer };
     }
-    var op = game.op === 'mix' ? pick(CORE_OPS) : game.op;
+    if (game.op === 'mix') {
+      // use exactly the symbols switched on — squares, roots, % and rounding included
+      var enabled = activeCore().concat(activeSpecial());
+      if (!enabled.length) enabled = CORE_OPS.slice();
+      var mop = pick(enabled);
+      if (SPECIAL_OPS.indexOf(mop) >= 0) { var sq = genSpecial(mop, LEVELS[level]); return { text: sq.text, answer: sq.answer }; }
+      var mpair = genPair(mop, gameLevel(mop));
+      return { text: mpair[0] + ' ' + mop + ' ' + mpair[1], answer: mpair[2] };
+    }
+    var op = game.op;
     var pair = genPair(op, gameLevel(op));
     return { text: pair[0] + ' ' + op + ' ' + pair[1], answer: pair[2] };
   }
