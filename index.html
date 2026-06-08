@@ -233,7 +233,7 @@
   .blue-btn:hover { background: #1a86e0; }
   .blue-btn:active { transform: translateY(4px); box-shadow: #07468b 0 1px 0 0; }
   .blue-btn.small { font-size: 14px; padding: 8px 16px 9px; box-shadow: #07468b 0 4px 0 0; }
-  .quiz-foot { margin-top: 16px; }
+  .quiz-foot { margin-top: 16px; display: flex; gap: 10px; justify-content: center; align-items: center; }
   .check-title { font-family: 'Chango', 'Bree Serif', serif; font-size: 24px; color: #36884d; margin-bottom: 10px; }
   .check-note { color: #36884d; font-weight: 600; margin: 8px 0 14px; font-size: 15px; }
   .chart-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #36884d; font-weight: 800; text-align: left; margin: 12px 0 4px; }
@@ -875,6 +875,7 @@
     <div class="feedback" id="feedback"></div>
     <div class="attempts" id="attempts"></div>
     <div class="quiz-foot">
+      <button class="back-btn" id="homeBtn" type="button">🏠 Home</button>
       <button class="blue-btn small" id="checkBtnQuiz" type="button">Let's Check!</button>
     </div>
   </div>
@@ -1970,6 +1971,10 @@
   }
   document.getElementById('checkBtnStart').addEventListener('click', function () { openCheck(startView); });
   document.getElementById('checkBtnQuiz').addEventListener('click', function () { openCheck(quizView); });
+  document.getElementById('homeBtn').addEventListener('click', function () {
+    montyIdle();
+    showView(startView);
+  });
   document.getElementById('checkBack').addEventListener('click', function () {
     showView(returnView);
     if (returnView === quizView) answerEl.focus();
