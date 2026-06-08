@@ -70,7 +70,8 @@
   .ops {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 9px;
   }
   .ops span {
     width: 34px;
@@ -92,7 +93,30 @@
   .ops .op-sub { background: #07468b; }
   .ops .op-mul { background: #36884d; }
   .ops .op-div { background: #1b2435; }
+  .ops .op-sq  { background: #b4519a; font-size: 17px; }
+  .ops .op-rt  { background: #c2410c; }
+  .ops .op-pct { background: #0d9488; }
+  .ops .op-rnd { background: #7c5cff; }
   .ops span.off { opacity: 0.32; filter: saturate(0.35); transform: scale(0.9); }
+  .opts {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 8px;
+  }
+  .opt-btn {
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: #36884d;
+    background: #eef5fc;
+    border: 3px solid #d7e3f0;
+    border-radius: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .opt-btn.on { background: #36884d; color: #fff; border-color: #36884d; }
   .ops-hint {
     font-family: 'Nunito', system-ui, sans-serif;
     font-weight: 800;
@@ -677,8 +701,16 @@
     <span class="op-sub" data-op="−" role="button" tabindex="0" aria-pressed="true" aria-label="Subtraction">&minus;</span>
     <span class="op-mul" data-op="×" role="button" tabindex="0" aria-pressed="true" aria-label="Multiplication">&times;</span>
     <span class="op-div" data-op="÷" role="button" tabindex="0" aria-pressed="true" aria-label="Division">&divide;</span>
+    <span class="op-sq"  data-op="x²" role="button" tabindex="0" aria-pressed="false" aria-label="Squared numbers">x&sup2;</span>
+    <span class="op-rt"  data-op="√"  role="button" tabindex="0" aria-pressed="false" aria-label="Square roots">&radic;</span>
+    <span class="op-pct" data-op="%"  role="button" tabindex="0" aria-pressed="false" aria-label="Percentages">%</span>
+    <span class="op-rnd" data-op="≈"  role="button" tabindex="0" aria-pressed="false" aria-label="Rounding">&asymp;</span>
   </div>
-  <div class="ops-hint" id="opsHint">Tap an operation to turn it on or off</div>
+  <div class="ops-hint" id="opsHint">Tap to turn each one on or off</div>
+  <div class="opts">
+    <button class="opt-btn" id="decBtn" type="button" aria-pressed="false">Decimals: Off</button>
+    <button class="opt-btn" id="lenBtn" type="button">Numbers: up to 3</button>
+  </div>
 </div>
 
 <div class="card" id="card">
@@ -750,7 +782,7 @@
     </div>
     <div class="question" id="question"></div>
     <div class="answer-row">
-      <input type="text" id="answer" inputmode="numeric" autocomplete="off">
+      <input type="text" id="answer" inputmode="decimal" autocomplete="off">
       <button class="check-btn" id="check">Check</button>
     </div>
     <div class="feedback" id="feedback"></div>
@@ -788,7 +820,7 @@
     <div class="question" id="miniQuestion"></div>
     <div class="mini-answers" id="miniAnswers"></div>
     <div class="answer-row hidden" id="miniClockRow">
-      <input type="text" id="miniInput" inputmode="numeric" autocomplete="off">
+      <input type="text" id="miniInput" inputmode="decimal" autocomplete="off">
       <button class="check-btn" id="miniGo" type="button">Go</button>
     </div>
     <div class="feedback correct" id="miniFeedback"></div>
@@ -817,7 +849,7 @@
     <div class="mini-progress" id="dailyProgress"></div>
     <div class="question" id="dailyQuestion"></div>
     <div class="answer-row" id="dailyRow">
-      <input type="text" id="dailyInput" inputmode="numeric" autocomplete="off">
+      <input type="text" id="dailyInput" inputmode="decimal" autocomplete="off">
       <button class="check-btn" id="dailyGo" type="button">Go</button>
     </div>
     <div class="feedback correct" id="dailyFeedback"></div>
@@ -839,7 +871,7 @@
     <div class="duel-turn" id="duelTurn"></div>
     <div class="question" id="duelQuestion"></div>
     <div class="answer-row" id="duelRow">
-      <input type="text" id="duelInput" inputmode="numeric" autocomplete="off">
+      <input type="text" id="duelInput" inputmode="decimal" autocomplete="off">
       <button class="check-btn" id="duelGo" type="button">Go</button>
     </div>
     <div class="feedback correct" id="duelFeedback"></div>
@@ -1005,7 +1037,9 @@
     medium: { addMax: 49, subMin: 5,  mulMax: 12, divMax: 49,  singleProb: 0.45 },
     hard:   { addMax: 99, subMin: 12, mulMax: 12, divMax: 144, singleProb: 0.15 }
   };
-  var OP_ORDER = ['+', '−', '×', '÷'];
+  var CORE_OPS = ['+', '−', '×', '÷'];
+  var SPECIAL_OPS = ['x²', '√', '%', '≈'];   // squares, roots, percentages, rounding
+  var OP_ORDER = CORE_OPS.concat(SPECIAL_OPS);
 
   function loadJSON(key, fallback) {
     try {
@@ -1024,9 +1058,19 @@
   var level = loadJSON(pfx(LEVEL_KEY), 'medium');
   if (!LEVELS[level]) level = 'medium';
 
+  // Decimals option + how many numbers per question (2–4). Defaults keep the
+  // original behaviour: no decimal operands, chains up to 3 numbers.
+  var DEC_KEY = 'mathsQuizDecimals';
+  var LEN_KEY = 'mathsQuizQlen';
+  var useDecimals = loadJSON(pfx(DEC_KEY), false);
+  var qLen = loadJSON(pfx(LEN_KEY), 3);
+  if ([2, 3, 4].indexOf(qLen) < 0) qLen = 3;
+
   function activeOps() {
     return OP_ORDER.filter(function (o) { return enabledOps[o]; });
   }
+  function activeCore() { return CORE_OPS.filter(function (o) { return enabledOps[o]; }); }
+  function activeSpecial() { return SPECIAL_OPS.filter(function (o) { return enabledOps[o]; }); }
 
   var opChips = document.querySelectorAll('.ops span');
   function refreshChips() {
@@ -1070,6 +1114,27 @@
     });
   });
   refreshLevels();
+
+  // --- Decimals + question-length options ---
+  var decBtn = document.getElementById('decBtn');
+  var lenBtn = document.getElementById('lenBtn');
+  function refreshOpts() {
+    decBtn.textContent = 'Decimals: ' + (useDecimals ? 'On' : 'Off');
+    decBtn.classList.toggle('on', useDecimals);
+    decBtn.setAttribute('aria-pressed', useDecimals ? 'true' : 'false');
+    lenBtn.textContent = 'Numbers: up to ' + qLen;
+  }
+  decBtn.addEventListener('click', function () {
+    useDecimals = !useDecimals;
+    saveJSON(pfx(DEC_KEY), useDecimals);
+    refreshOpts();
+  });
+  lenBtn.addEventListener('click', function () {
+    qLen = qLen >= 4 ? 2 : qLen + 1;
+    saveJSON(pfx(LEN_KEY), qLen);
+    refreshOpts();
+  });
+  refreshOpts();
 
   // --- celebrations: confetti + dancing panda ---
   var confettiCanvas = document.getElementById('confettiCanvas');
@@ -1273,6 +1338,11 @@
   }
   function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
 
+  // Division answers can be non-whole, so round to the hundredths (2 d.p.).
+  function round2(n) { return Math.round(n * 100) / 100; }
+  // A typed answer counts as correct if it matches to the hundredth.
+  function sameNum(a, b) { return Math.abs(a - b) < 0.005; }
+
   // Generate first pair: returns [a, b, result] sized by the current level
   function genPair(op, Lopt) {
     var L = Lopt || LEVELS[level], a, b;
@@ -1288,68 +1358,123 @@
       a = randInt(2, L.mulMax); b = randInt(2, L.mulMax);
       return [a, b, a * b];
     }
-    // division: exact, dividend capped by level
+    // division: dividend capped by level; answer rounded to 2 d.p. (may be non-whole)
     var d = randInt(2, L.mulMax);
-    var q = randInt(2, Math.max(2, Math.floor(L.divMax / d)));
-    return [q * d, d, q];
+    var dividend = randInt(d, L.divMax);   // dividend >= divisor keeps the answer >= 1
+    return [dividend, d, round2(dividend / d)];
   }
 
-  // Apply second operation to running result r with new number c
-  function genSecond(r, op) {
-    var L = LEVELS[level], c;
-    if (op === '+') {
-      c = randInt(2, L.addMax);
-      return [c, r + c];
-    }
-    if (op === '−') {
-      if (r < 4) return null;
-      c = randInt(2, Math.min(L.addMax, r - 1));
-      return [c, r - c];
-    }
+  // Apply the next operation in a multi-number chain, keeping the running total whole.
+  function chainSecond(r, op, L) {
+    var c;
+    if (op === '+') { c = randInt(2, L.addMax); return [c, r + c]; }
+    if (op === '−') { if (r < 4) return null; c = randInt(2, Math.min(L.addMax, r - 1)); return [c, r - c]; }
     if (op === '×') {
       if (r > 25) return null;          // keep it mental-maths sized
       c = randInt(2, r > 12 ? 6 : L.mulMax);
-      if (r * c > 200) return null;
+      if (r * c > 400) return null;
       return [c, r * c];
     }
-    // division: c must divide r exactly, quotient >= 2
-    var divisors = [];
-    for (var i = 2; i <= 12; i++) {
-      if (r % i === 0 && r / i >= 2) divisors.push(i);
-    }
-    if (!divisors.length) return null;
-    c = pick(divisors);
+    // division inside a chain stays exact so the running total never goes decimal
+    var divs = [];
+    for (var i = 2; i <= 12; i++) { if (r % i === 0 && r / i >= 2) divs.push(i); }
+    if (!divs.length) return null;
+    c = pick(divs);
     return [c, r / c];
+  }
+
+  // A copy of a level with smaller numbers, for longer (3–4 number) questions.
+  function clampLevel(L, cap) {
+    return {
+      addMax: Math.min(L.addMax, cap),
+      subMin: Math.min(L.subMin, Math.max(2, cap - 1)),
+      mulMax: L.mulMax,
+      divMax: Math.min(L.divMax, cap),
+      singleProb: L.singleProb
+    };
+  }
+
+  // Squares, square roots, percentages and rounding.
+  function genSpecial(op, L) {
+    var topN = level === 'easy' ? 5 : level === 'medium' ? 12 : 15;
+    if (op === 'x²') { var n = randInt(2, topN); return { text: n + '²', answer: n * n, ops: ['x²'] }; }
+    if (op === '√') { var m = randInt(2, topN); return { text: '√' + (m * m), answer: m, ops: ['√'] }; }
+    if (op === '%') {
+      var pcts, base;
+      if (level === 'easy') { pcts = [10, 50, 100]; base = randInt(1, 10) * 10; }
+      else if (level === 'medium') { pcts = [10, 20, 25, 50, 75]; base = randInt(1, 5) * 20; }
+      else { pcts = [5, 15, 30, 35, 40, 60, 80, 90]; base = randInt(2, 20) * 5; }
+      var p = pick(pcts);
+      return { text: p + '% of ' + base, answer: round2(p / 100 * base), ops: ['%'] };
+    }
+    // rounding (≈)
+    var nn, ans, text;
+    function twoDp(maxWhole) { var cc = randInt(1, 99); if (cc % 10 === 0) cc++; return round2(randInt(1, maxWhole) + cc / 100); }
+    if (level === 'easy') {
+      nn = randInt(11, 98); ans = Math.round(nn / 10) * 10; text = 'Round ' + nn + ' to the nearest 10';
+    } else if (level === 'medium') {
+      if (rng() < 0.5) { nn = randInt(101, 989); ans = Math.round(nn / 10) * 10; text = 'Round ' + nn + ' to the nearest 10'; }
+      else { var x = twoDp(20); ans = Math.round(x * 10) / 10; text = 'Round ' + x + ' to 1 d.p.'; }
+    } else {
+      var k = randInt(0, 2);
+      if (k === 0) { nn = randInt(120, 1980); ans = Math.round(nn / 100) * 100; text = 'Round ' + nn + ' to the nearest 100'; }
+      else if (k === 1) { var x2 = twoDp(50); ans = Math.round(x2 * 10) / 10; text = 'Round ' + x2 + ' to 1 d.p.'; }
+      else { nn = randInt(15, 985); ans = Math.round(nn / 10) * 10; text = 'Round ' + nn + ' to the nearest 10'; }
+    }
+    return { text: text, answer: round2(ans), ops: ['≈'] };
+  }
+
+  // A two-number question with 1-decimal-place numbers (the Decimals option).
+  function genDecimalPair(cores, L) {
+    var choices = cores.filter(function (o) { return o !== '÷'; });
+    if (!choices.length) choices = ['+'];
+    var op = pick(choices);
+    function dec1(cap) { return round2(randInt(1, cap) + randInt(0, 9) / 10); }
+    var a, b, ans;
+    if (op === '×') { a = dec1(Math.min(L.mulMax, 9)); b = randInt(2, L.mulMax); ans = round2(a * b); }
+    else if (op === '−') { a = dec1(Math.min(L.addMax, 20)); b = dec1(Math.min(L.addMax, 20)); if (b > a) { var t = a; a = b; b = t; } ans = round2(a - b); }
+    else { a = dec1(Math.min(L.addMax, 20)); b = dec1(Math.min(L.addMax, 20)); ans = round2(a + b); }
+    return { text: a + ' ' + op + ' ' + b, answer: ans, ops: [op] };
+  }
+
+  // Whole-number questions of 2–4 numbers, with brackets kept correct so the
+  // written sum always evaluates (with normal BODMAS precedence) to the answer.
+  function genIntegerChain(cores, L) {
+    for (var attempt = 0; attempt < 200; attempt++) {
+      var maxOps = qLen - 1;
+      var nOps = (rng() < L.singleProb || maxOps < 2) ? 1 : randInt(2, maxOps);
+      var CL = nOps >= 2 ? clampLevel(L, 50) : L;   // longer questions use numbers up to 50
+      var op1 = pick(cores);
+      var pair = genPair(op1, CL);
+      var a = pair[0], b = pair[1], r = pair[2];
+      if (nOps === 1) return { text: a + ' ' + op1 + ' ' + b, answer: r, ops: [op1] };
+      if (r % 1 !== 0) continue;                     // a decimal division can't start a chain
+      var expr = a + ' ' + op1 + ' ' + b;
+      var atomic = (op1 === '×' || op1 === '÷');     // safe to append × / ÷ without brackets?
+      var used = [op1], ok = true;
+      for (var s = 1; s < nOps; s++) {
+        var op = pick(cores);
+        var step = chainSecond(r, op, CL);
+        if (!step) { ok = false; break; }
+        r = step[1];
+        if (op === '+' || op === '−') { expr = expr + ' ' + op + ' ' + step[0]; atomic = false; }
+        else { expr = (atomic ? expr : '(' + expr + ')') + ' ' + op + ' ' + step[0]; atomic = true; }
+        used.push(op);
+      }
+      if (ok) return { text: expr, answer: r, ops: used };
+    }
+    var x = randInt(2, L.addMax), y = randInt(2, L.addMax);
+    return { text: x + ' + ' + y, answer: x + y, ops: ['+'] };
   }
 
   function genQuestion() {
     var L = LEVELS[level];
-    var ops = activeOps();
-    for (var t = 0; t < 300; t++) {
-      var op1 = pick(ops);
-      var pair = genPair(op1);
-      if (!pair) continue;
-      var a = pair[0], b = pair[1], r1 = pair[2];
-
-      if (rng() < L.singleProb) {
-        return { text: a + ' ' + op1 + ' ' + b, answer: r1, ops: [op1] };
-      }
-
-      var op2 = pick(ops);
-      var step = genSecond(r1, op2);
-      if (!step) continue;
-      var c = step[0], r2 = step[1];
-
-      // Brackets when left-to-right order would break BODMAS
-      var needBrackets = (op2 === '×' || op2 === '÷') && (op1 === '+' || op1 === '−');
-      var text = needBrackets
-        ? '(' + a + ' ' + op1 + ' ' + b + ') ' + op2 + ' ' + c
-        : a + ' ' + op1 + ' ' + b + ' ' + op2 + ' ' + c;
-      return { text: text, answer: r2, ops: [op1, op2] };
-    }
-    // Fallback (never expected): simple addition
-    var x = randInt(2, LEVELS[level].addMax), y = randInt(2, LEVELS[level].addMax);
-    return { text: x + ' + ' + y, answer: x + y, ops: ['+'] };
+    var specials = activeSpecial();
+    var cores = activeCore();
+    if (specials.length && (!cores.length || rng() < 0.4)) return genSpecial(pick(specials), L);
+    if (useDecimals && cores.length && rng() < 0.5) return genDecimalPair(cores, L);
+    if (!cores.length) return genSpecial(pick(specials), L);
+    return genIntegerChain(cores, L);
   }
 
   function nextQuestion() {
@@ -1378,7 +1503,7 @@
     var val = Number(raw);
     var elapsed = Date.now() - qStart;
     var fasterNote = '';
-    if (val === current.answer) {
+    if (sameNum(val, current.answer)) {
       locked = true;
       score++;
       if (attempts === 0) {
@@ -1463,8 +1588,10 @@
   var facts = loadJSON(pfx(FACTS_KEY), { map: {}, order: [] });
   if (!facts.map) facts = { map: {}, order: [] };
 
-  var OP_COLORS = { '+': '#0075d4', '−': '#07468b', '×': '#36884d', '÷': '#1b2435' };
-  var OP_NAMES = { '+': 'adding', '−': 'taking away', '×': 'times', '÷': 'sharing' };
+  var OP_COLORS = { '+': '#0075d4', '−': '#07468b', '×': '#36884d', '÷': '#1b2435',
+                    'x²': '#b4519a', '√': '#c2410c', '%': '#0d9488', '≈': '#7c5cff' };
+  var OP_NAMES = { '+': 'adding', '−': 'taking away', '×': 'times', '÷': 'sharing',
+                   'x²': 'squares', '√': 'square roots', '%': 'percentages', '≈': 'rounding' };
   var TIPS = {
     '+': ['Make a ten first: 8 + 6 is 8 + 2 + 4 = 14',
           'Add the tens first, then the ones',
@@ -1477,7 +1604,16 @@
           'Say the times table out loud — it sticks!'],
     '÷': ['Division is a hidden times question: 24 ÷ 6 asks 6 × ? = 24',
           'Share it out in your head, one round at a time',
-          'Strong times tables make division easy']
+          'If it doesn’t share out evenly, round to 2 decimal places: 7 ÷ 3 = 2.33',
+          'Strong times tables make division easy'],
+    'x²': ['Squaring means times itself: 6² = 6 × 6 = 36',
+           'Learn the square numbers up to 12² — they pop up everywhere'],
+    '√': ['A square root undoes squaring: √49 asks “what times itself makes 49?”',
+          'If you know 7 × 7 = 49, then √49 = 7'],
+    '%': ['10% is just ÷ 10; 50% is half; 25% is half of a half',
+          'Find 10% first, then build up: 30% is three lots of 10%'],
+    '≈': ['Look at the next digit: 5 or more rounds up, 4 or less stays the same',
+          'To the nearest 10 the answer always ends in 0']
   };
 
   function todayKey() {
@@ -1602,9 +1738,11 @@
   function opChartSVG() {
     var s = opTotals();
     var rowH = 36;
+    // core operations always show; the extra challenges only once they've been tried
+    var shown = OP_ORDER.filter(function (o) { return CORE_OPS.indexOf(o) >= 0 || s[o].t; });
     var svg = '<div class="chart-label">How you are doing at each one</div>' +
-      '<svg class="chart" viewBox="0 0 420 ' + (rowH * 4) + '" xmlns="http://www.w3.org/2000/svg">';
-    OP_ORDER.forEach(function (o, i) {
+      '<svg class="chart" viewBox="0 0 420 ' + (rowH * shown.length) + '" xmlns="http://www.w3.org/2000/svg">';
+    shown.forEach(function (o, i) {
       var y = i * rowH;
       svg += '<rect x="0" y="' + (y + 4) + '" width="26" height="26" rx="7" fill="' + OP_COLORS[o] + '"/>' +
         '<text x="13" y="' + (y + 23) + '" font-size="16" fill="#fff" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="800">' + o + '</text>';
@@ -1765,19 +1903,22 @@
       game.poolIdx++;
       return { text: item.text, answer: item.answer };
     }
-    var op = game.op === 'mix' ? pick(OP_ORDER) : game.op;
+    var op = game.op === 'mix' ? pick(CORE_OPS) : game.op;
     var pair = genPair(op, gameLevel(op));
     return { text: pair[0] + ' ' + op + ' ' + pair[1], answer: pair[2] };
   }
   function makeChoices(ans) {
     var out = [ans];
-    var offs = shuffleArr([1, -1, 2, -2, 3, -3, 10, -10, 5, -5]);
+    var whole = (ans % 1 === 0);
+    var offs = shuffleArr(whole
+      ? [1, -1, 2, -2, 3, -3, 10, -10, 5, -5]
+      : [0.1, -0.1, 0.2, -0.2, 0.5, -0.5, 1, -1, 0.01, -0.01]);
     for (var i = 0; i < offs.length && out.length < 4; i++) {
-      var v = ans + offs[i];
+      var v = round2(ans + offs[i]);
       if (v >= 0 && out.indexOf(v) < 0) out.push(v);
     }
     while (out.length < 4) {
-      var w = ans + randInt(4, 14);
+      var w = round2(ans + (whole ? randInt(4, 14) : 1 + randInt(1, 9) / 10));
       if (out.indexOf(w) < 0) out.push(w);
     }
     return shuffleArr(out);
@@ -1829,12 +1970,14 @@
       var truth = Math.random() < 0.5;
       var shown = ans;
       if (!truth) {
-        var offs = shuffleArr([1, -1, 2, -2, 3, 10, -10]);
+        var twhole = (ans % 1 === 0);
+        var offs = shuffleArr(twhole ? [1, -1, 2, -2, 3, 10, -10] : [0.1, -0.1, 0.2, -0.2, 0.5, 1, -1]);
         for (var i = 0; i < offs.length; i++) {
-          if (ans + offs[i] >= 0) { shown = ans + offs[i]; break; }
+          var cand = round2(ans + offs[i]);
+          if (cand >= 0 && cand !== ans) { shown = cand; break; }
         }
       }
-      game.answer = (shown === ans);
+      game.answer = sameNum(shown, ans);
       miniQuestion.textContent = q.text + ' = ' + shown + '?';
       ansButton('True', function () { pickTof(this, true, ans); });
       ansButton('False', function () { pickTof(this, false, ans); });
@@ -1843,14 +1986,14 @@
   }
   function markRight() {
     Array.prototype.forEach.call(miniAnswers.children, function (b) {
-      if (game.type === 'pop' && Number(b.textContent) === game.answer) b.classList.add('right');
+      if (game.type === 'pop' && sameNum(Number(b.textContent), game.answer)) b.classList.add('right');
       if (game.type === 'tof' && (b.textContent === 'True') === game.answer) b.classList.add('right');
     });
   }
   function pickPop(btn, val) {
     if (game.locked) return;
     game.locked = true;
-    if (val === game.answer) {
+    if (sameNum(val, game.answer)) {
       btn.classList.add('right');
       game.score++;
       miniFeedback.textContent = pick(praise);
@@ -1904,7 +2047,7 @@
   function clockCheck() {
     var raw = miniInput.value.trim();
     if (raw === '' || isNaN(Number(raw))) return;
-    if (Number(raw) === game.answer) {
+    if (sameNum(Number(raw), game.answer)) {
       game.score++;
       popEl(miniQuestion);
       sfx('right');
@@ -2285,16 +2428,17 @@
     };
   }
   function dailyQuestions() {
-    var saveRng = rng, saveLevel = level, saveOps = enabledOps;
+    var saveRng = rng, saveLevel = level, saveOps = enabledOps, saveDec = useDecimals, saveLen = qLen;
     rng = seededRng('monty-' + todayKey());
     level = 'medium';
     enabledOps = { '+': true, '−': true, '×': true, '÷': true };
+    useDecimals = false; qLen = 3;   // keep the daily identical for everyone
     var qs = [], seen = {}, guard = 0;
     while (qs.length < 10 && guard++ < 500) {
       var q = genQuestion();
       if (!seen[q.text]) { seen[q.text] = 1; qs.push(q); }
     }
-    rng = saveRng; level = saveLevel; enabledOps = saveOps;
+    rng = saveRng; level = saveLevel; enabledOps = saveOps; useDecimals = saveDec; qLen = saveLen;
     return qs;
   }
   function openDaily() {
@@ -2330,7 +2474,7 @@
     if (raw === '' || isNaN(Number(raw))) return;
     var q = daily.qs[daily.idx];
     var elapsed = Date.now() - qStart;
-    var right = Number(raw) === q.answer;
+    var right = sameNum(Number(raw), q.answer);
     recordResult(q.ops, right, elapsed);
     recordFact(q.text, q.answer, right, elapsed);
     daily.waiting = true;
@@ -2431,7 +2575,7 @@
     var raw = duelInput.value.trim();
     if (raw === '' || isNaN(Number(raw))) return;
     duel.waiting = true;
-    var right = Number(raw) === duel.answer;
+    var right = sameNum(Number(raw), duel.answer);
     if (right) {
       duel.scores[duel.turn]++;
       sfx('right');
