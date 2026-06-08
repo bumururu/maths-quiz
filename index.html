@@ -263,6 +263,10 @@
   .lb-table td:nth-child(2), .lb-table th:nth-child(2) { text-align: left; }
   .lb-me td { background: #eaf6ed; }
   .lb-rm { background: none; border: none; color: #c2410c; font-weight: 800; cursor: pointer; font-size: 14px; }
+  /* on-screen number pad */
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 230px; margin: 10px auto 0; }
+  .keypad button { font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 22px; padding: 11px 0; border: 3px solid #d7e3f0; border-radius: 12px; background: #fff; color: #36884d; cursor: pointer; }
+  .keypad button:active { background: #d0ecff; transform: scale(0.96); }
   .ops-hint {
     font-family: 'Nunito', system-ui, sans-serif;
     font-weight: 800;
@@ -872,6 +876,7 @@
       <button class="level-btn" data-level="easy" type="button">Easy</button>
       <button class="level-btn" data-level="medium" type="button">Medium</button>
       <button class="level-btn" data-level="hard" type="button">Hard</button>
+      <button class="level-btn" data-level="auto" type="button">Auto</button>
     </div>
     <button class="start-btn" id="startBtn">
       <span class="icon">
@@ -926,6 +931,7 @@
       <button class="meta-btn" id="musicBtn" type="button"></button>
       <button class="meta-btn" id="volBtn" type="button"></button>
       <button class="meta-btn" id="themeBtn" type="button"></button>
+      <button class="meta-btn" id="keypadBtn" type="button"></button>
     </div>
   </div>
 
@@ -965,6 +971,12 @@
       <input type="text" id="answer" inputmode="decimal" autocomplete="off">
       <button class="check-btn" id="check">Check</button>
     </div>
+    <div class="keypad hidden" id="keypad">
+      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+      <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="back">&#9003;</button>
+    </div>
     <div class="feedback" id="feedback"></div>
     <div class="attempts" id="attempts"></div>
     <div class="quiz-foot">
@@ -978,6 +990,7 @@
     <h2 class="check-title">Monty's Check-Up</h2>
     <div id="checkSummary"></div>
     <div class="check-actions">
+      <button class="blue-btn" id="weakBtn" type="button">🎯 Practise weak spots</button>
       <button class="blue-btn" id="graphBtn" type="button">Graph</button>
       <button class="back-btn" id="checkBack" type="button">Back</button>
     </div>
@@ -1323,6 +1336,22 @@
   }
   var level = loadJSON(pfx(LEVEL_KEY), 'medium');
   if (!LEVELS[level]) level = 'medium';
+  // Adaptive difficulty: when on, the level nudges up/down with recent results.
+  var AUTO_KEY = 'mathsQuizAuto';
+  var autoOn = loadJSON(pfx(AUTO_KEY), false);
+  var adaptWin = [];
+  var LEVEL_SEQ = ['easy', 'medium', 'hard'];
+  function capWord(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function adaptiveNote(correct) {
+    if (!autoOn) return;
+    adaptWin.push(correct ? 1 : 0);
+    if (adaptWin.length > 6) adaptWin.shift();
+    if (adaptWin.length < 6) return;
+    var right = 0; for (var i = 0; i < adaptWin.length; i++) right += adaptWin[i];
+    var idx = LEVEL_SEQ.indexOf(level);
+    if (right >= 5 && idx < 2) { level = LEVEL_SEQ[idx + 1]; saveJSON(pfx(LEVEL_KEY), level); refreshLevels(); adaptWin = []; toast('Level up → ' + capWord(level) + '!'); }
+    else if (right <= 2 && idx > 0) { level = LEVEL_SEQ[idx - 1]; saveJSON(pfx(LEVEL_KEY), level); refreshLevels(); adaptWin = []; toast('Eased down to ' + capWord(level)); }
+  }
 
   // Decimals option + how many numbers per question (2–4). Defaults keep the
   // original behaviour: no decimal operands, chains up to 3 numbers.
@@ -1369,13 +1398,15 @@
   var levelBtns = document.querySelectorAll('.level-btn');
   function refreshLevels() {
     Array.prototype.forEach.call(levelBtns, function (btn) {
-      btn.classList.toggle('selected', btn.getAttribute('data-level') === level);
+      var dl = btn.getAttribute('data-level');
+      btn.classList.toggle('selected', dl === 'auto' ? autoOn : (!autoOn && dl === level));
     });
   }
   Array.prototype.forEach.call(levelBtns, function (btn) {
     btn.addEventListener('click', function () {
-      level = btn.getAttribute('data-level');
-      saveJSON(pfx(LEVEL_KEY), level);
+      var dl = btn.getAttribute('data-level');
+      if (dl === 'auto') { autoOn = !autoOn; adaptWin = []; saveJSON(pfx(AUTO_KEY), autoOn); }
+      else { autoOn = false; saveJSON(pfx(AUTO_KEY), autoOn); level = dl; saveJSON(pfx(LEVEL_KEY), level); }
       refreshLevels();
     });
   });
@@ -1801,8 +1832,35 @@
 
   // worded questions already end in '?', so don't tack ' = ?' on the end of those
   function qText(t) { return /\?\s*$/.test(t) ? t : t + ' = ?'; }
+  function fmtAns(q) { return (q.ops && q.ops.indexOf('£') >= 0) ? '£' + q.answer.toFixed(2) : String(q.answer); }
+  // a short worked explanation shown after a couple of wrong tries
+  function workingFor(q) {
+    var op = q.ops && q.ops.length === 1 ? q.ops[0] : null, a = q.answer, m;
+    if (op === '+') return 'Add them up — count on from the bigger number.';
+    if (op === '−') return 'Take away, or count up from the smaller number to the bigger one.';
+    if (op === '×') { m = q.text.match(/^(\d+) × (\d+)$/); return m ? (m[2] + ' lots of ' + m[1] + ' — use your ' + m[1] + ' times table.') : 'It’s repeated adding — lean on your times tables.'; }
+    if (op === '÷') { m = q.text.match(/^(\d+) ÷ (\d+)$/); return m ? ('Ask: ' + m[2] + ' × ? = ' + m[1] + '.') : 'Division is a hidden times question.'; }
+    if (op === 'x²') { m = q.text.match(/^(\d+)²$/); return m ? (m[1] + '² means ' + m[1] + ' × ' + m[1] + ' = ' + a + '.') : 'Squaring is a number times itself.'; }
+    if (op === '√') { m = q.text.match(/^√(\d+)$/); return m ? ('What times itself makes ' + m[1] + '? ' + a + ' × ' + a + ' = ' + m[1] + '.') : 'A root undoes squaring.'; }
+    if (op === '%') { m = q.text.match(/^(\d+)% of (\d+)$/); return m ? ('10% of ' + m[2] + ' is ' + (m[2] / 10) + ' — build up from there.') : 'Find 10% first, then scale up.'; }
+    if (op === '≈') return 'Look at the next digit along: 5 or more rounds up, 4 or less stays the same.';
+    if (op === '£') return 'Work out the pounds and the pence — it comes to £' + a.toFixed(2) + '.';
+    if (op === '½') { m = q.text.match(/^(\d+)\/(\d+) of (\d+)$/); return m ? (m[3] + ' ÷ ' + m[2] + ' = ' + (m[3] / m[2]) + ', then × ' + m[1] + ' = ' + a + '.') : '“of” means times.'; }
+    if (op === '🕐') return 'Remember there are 60 minutes in an hour, and count on in steps.';
+    if (op === '📖') return 'Pick out the numbers, then choose + − × or ÷ to get ' + a + '.';
+    return 'Work through it one step at a time — the answer is ' + a + '.';
+  }
+  var weakMode = false;
+  function genWeakQuestion() {
+    var pool = trickyPool();
+    if (pool.length && rng() < 0.5) { var it = pick(pool); return { text: it.text, answer: it.answer, ops: [] }; }
+    var weak = focusOp();
+    if (SPECIAL_OPS.indexOf(weak) >= 0) return genSpecial(weak, LEVELS[level]);
+    var pr = genPair(weak, LEVELS[level]);
+    return { text: pr[0] + ' ' + weak + ' ' + pr[1], answer: pr[2], ops: [weak] };
+  }
   function nextQuestion() {
-    current = genQuestion();
+    current = weakMode ? genWeakQuestion() : genQuestion();
     attempts = 0;
     locked = false;
     qnumEl.textContent = qnum;
@@ -1836,6 +1894,7 @@
         streak++;
         popEl(streakEl);
         recordResult(current.ops, true, elapsed);
+        adaptiveNote(true);
         if (recordFact(current.text, current.answer, true, elapsed)) {
           fasterNote = ' Faster than last time — ' + (elapsed / 1000).toFixed(1) + 's!';
         }
@@ -1886,33 +1945,53 @@
       if (attempts === 0) {
         recordResult(current.ops, false, elapsed);
         recordFact(current.text, current.answer, false, elapsed);
+        adaptiveNote(false);
       }
       attempts++;
       if (attempts === 1) {
         streak = 0;
         streakEl.textContent = streak;
       }
-      feedbackEl.textContent = pick(nudge);
-      feedbackEl.className = 'feedback wrong';
       sfx('wrong');
       sadMoment();
-      montyReact('sad', pick(['Hmm…', 'Oops!', 'Try again']));
-      if (Math.random() < 0.3) say(pick(['Try again!', 'Almost!', 'You can do it!']));
-      attemptsEl.textContent = 'Attempts: ' + attempts;
-      answerEl.classList.remove('shake');
-      void answerEl.offsetWidth;
-      answerEl.classList.add('shake');
-      answerEl.select();
+      if (attempts >= 2) {
+        // shown the working and move on, so they're never stuck
+        locked = true;
+        feedbackEl.innerHTML = 'It was <strong>' + fmtAns(current) + '</strong>. ' + workingFor(current);
+        feedbackEl.className = 'feedback wrong';
+        montyReact('sad', 'Here’s how');
+        attemptsEl.textContent = '';
+        qnum++;
+        setTimeout(nextQuestion, 3600);
+      } else {
+        feedbackEl.textContent = pick(nudge);
+        feedbackEl.className = 'feedback wrong';
+        montyReact('sad', pick(['Hmm…', 'Oops!', 'Try again']));
+        if (Math.random() < 0.3) say(pick(['Try again!', 'Almost!', 'You can do it!']));
+        attemptsEl.textContent = 'Attempts: ' + attempts;
+        answerEl.classList.remove('shake');
+        void answerEl.offsetWidth;
+        answerEl.classList.add('shake');
+        answerEl.select();
+      }
     }
   }
 
   startBtn.addEventListener('click', function () {
+    weakMode = false;
     startView.classList.add('hidden');
     quizView.classList.remove('hidden');
     var opsHint = document.getElementById('opsHint');
     if (opsHint) opsHint.classList.add('hidden');
     nextQuestion();
     fitToViewport();
+  });
+  document.getElementById('weakBtn').addEventListener('click', function () {
+    weakMode = true;
+    var oh = document.getElementById('opsHint');
+    if (oh) oh.classList.add('hidden');
+    showView(quizView);
+    nextQuestion();
   });
 
   checkBtn.addEventListener('click', check);
@@ -3058,18 +3137,43 @@
     if (theme !== 'sky') document.body.classList.add('theme-' + theme);
   }
   applyTheme();
+  var keypadBtn = document.getElementById('keypadBtn');
+  var KEYPAD_KEY = 'mathsQuizKeypad';
+  var keypadOn = loadJSON(pfx(KEYPAD_KEY), false);
+  var keypadEl = document.getElementById('keypad');
+  function applyKeypad() { if (keypadEl) keypadEl.classList.toggle('hidden', !keypadOn); }
+  applyKeypad();
+  if (keypadEl) {
+    Array.prototype.forEach.call(keypadEl.querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-k');
+        if (k === 'back') answerEl.value = answerEl.value.slice(0, -1);
+        else if (k === '.') { if (answerEl.value.indexOf('.') < 0) answerEl.value += '.'; }
+        else answerEl.value += k;
+        answerEl.focus();
+      });
+    });
+  }
   function refreshMeta() {
     playerBtn.textContent = 'Playing: ' + player;
     soundBtn.textContent = soundOn ? 'Sound: On' : 'Sound: Off';
     musicBtn.textContent = musicOn ? 'Music: On' : 'Music: Off';
     volBtn.textContent = 'Volume: ' + volLevel.charAt(0).toUpperCase() + volLevel.slice(1);
     themeBtn.textContent = 'Theme: ' + THEME_NAMES[theme];
+    keypadBtn.textContent = 'Keypad: ' + (keypadOn ? 'On' : 'Off');
   }
   refreshMeta();
   themeBtn.addEventListener('click', function () {
     theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
     saveJSON(THEME_KEY, theme);
     applyTheme();
+    refreshMeta();
+    fitToViewport();
+  });
+  keypadBtn.addEventListener('click', function () {
+    keypadOn = !keypadOn;
+    saveJSON(pfx(KEYPAD_KEY), keypadOn);
+    applyKeypad();
     refreshMeta();
     fitToViewport();
   });
