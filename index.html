@@ -184,6 +184,43 @@
   body.theme-night .logo-word .maths, body.theme-night .logo-word .quiz { color: #eaf2ff; }
   body.theme-space .ops-hint, body.theme-sea .ops-hint, body.theme-night .ops-hint,
   body.theme-space .credit, body.theme-sea .credit, body.theme-night .credit { color: #d6e6ff; }
+  /* Rewards */
+  .reward-strip { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 0 0 14px; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; }
+  .reward-strip:empty { display: none; }
+  .rs-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 12px; padding: 5px 11px; font-size: 14px; }
+  .rs-coins { background: #fdf3d0; border: 2px solid #e8c75a; color: #8a6d1f; }
+  .rs-flame { background: #ffe7da; border: 2px solid #f0a081; color: #c2410c; }
+  .rs-level { background: #e0f0e4; border: 2px solid #8fcfa1; color: #2c6b3e; }
+  .xp-bar { width: 70px; height: 9px; background: #cfe3d6; border-radius: 6px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .xp-fill { display: block; height: 100%; background: #36884d; border-radius: 6px; }
+  .rw-section { margin: 0 0 18px; }
+  .rw-h { font-family: 'Chango', 'Bree Serif', serif; font-size: 16px; color: #36884d; margin: 0 0 8px; }
+  .rw-level-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
+  .rw-big-bar { flex: 1; max-width: 220px; height: 14px; background: #cfe3d6; border-radius: 8px; overflow: hidden; }
+  .rw-cal { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+  .cal-day { width: 30px; height: 36px; border-radius: 8px; background: #eef5fc; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 12px; color: #9bb0c1; }
+  .cal-day.played { background: #ffe7da; color: #c2410c; }
+  .cal-day .dnum { font-size: 11px; }
+  .wardrobe-preview { display: flex; justify-content: center; margin-bottom: 10px; }
+  .wardrobe-preview svg { width: 92px; height: 92px; }
+  .wardrobe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ward-item { border: 3px solid #d7e3f0; border-radius: 14px; padding: 7px; display: flex; align-items: center; gap: 7px; background: #fff; }
+  .ward-item.equipped { border-color: #36884d; background: #eaf6ed; }
+  .ward-mini { width: 40px; height: 40px; flex: 0 0 auto; }
+  .ward-info { flex: 1; text-align: left; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 13px; color: #36884d; line-height: 1.2; }
+  .ward-cost { font-size: 12px; color: #8a6d1f; font-weight: 800; }
+  .ward-btn { font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 12px; border: none; border-radius: 10px; padding: 7px 10px; cursor: pointer; background: #0075d4; color: #fff; flex: 0 0 auto; }
+  .ward-btn.owned { background: #36884d; }
+  .ward-btn.locked { background: #c9d6e3; color: #6b7c8c; }
+  .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .badge { border-radius: 14px; padding: 9px 4px; text-align: center; background: #eef5fc; }
+  .badge.earned { background: #fff7e0; border: 2px solid #e8c75a; }
+  .badge.locked { opacity: 0.55; }
+  .badge .b-icon { font-size: 24px; line-height: 1; }
+  .badge .b-name { font-family: 'Nunito', system-ui, sans-serif; font-size: 10px; font-weight: 800; color: #36884d; margin-top: 4px; }
+  .badge.locked .b-name { color: #9bb0c1; }
+  #toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: #1b2435; color: #fff; font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 14px; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 60; box-shadow: 0 6px 18px rgba(0,0,0,0.25); max-width: 86vw; text-align: center; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .ops-hint {
     font-family: 'Nunito', system-ui, sans-serif;
     font-weight: 800;
@@ -784,6 +821,7 @@
 
   <!-- Start screen -->
   <div id="startView">
+    <div class="reward-strip" id="rewardStrip"></div>
     <div class="levels" role="group" aria-label="Difficulty">
       <button class="level-btn" data-level="easy" type="button">Easy</button>
       <button class="level-btn" data-level="medium" type="button">Medium</button>
@@ -825,6 +863,9 @@
     <div>
       <button class="gold-btn" id="dailyBtn" type="button">Monty's Daily Challenge</button>
     </div>
+    <div>
+      <button class="gold-btn" id="rewardsBtn" type="button">⭐ Rewards &amp; Wardrobe</button>
+    </div>
     <div class="btn-row">
       <button class="blue-btn small" id="checkBtnStart" type="button">Let's Check!</button>
       <button class="blue-btn small" id="duelBtn" type="button">2-Player Duel</button>
@@ -857,6 +898,8 @@
         <ellipse cx="60" cy="78" rx="5.4" ry="4" fill="#1b2435"/>
         <path class="m-smile" d="M60 84 q-7 9 -13 2 M60 84 q7 9 13 2" fill="none" stroke="#1b2435" stroke-width="2.6" stroke-linecap="round"/>
         <path class="m-frown" d="M48 92 q12 -10 24 0" fill="none" stroke="#1b2435" stroke-width="2.6" stroke-linecap="round"/>
+        <g id="montyAcc"></g>
+        <g id="montyHat"></g>
       </svg>
     </div>
     <div class="stats">
@@ -968,9 +1011,20 @@
       <button class="back-btn" id="duelBack" type="button">Back</button>
     </div>
   </div>
+
+  <!-- Rewards screen -->
+  <div id="rewardsView" class="hidden">
+    <h2 class="check-title">Your Rewards</h2>
+    <div id="rewardsBody"></div>
+    <div class="check-actions">
+      <button class="back-btn" id="rewardsBack" type="button">Back</button>
+    </div>
+  </div>
 </div>
 <div class="credit">by Barnaby Hickman</div>
 </div>
+
+<div id="toast"></div>
 
 <!-- Celebration layers -->
 <canvas id="confettiCanvas"></canvas>
@@ -1615,6 +1669,7 @@
     var val = Number(raw);
     var elapsed = Date.now() - qStart;
     var fasterNote = '';
+    dayBonus();
     if (sameNum(val, current.answer)) {
       locked = true;
       score++;
@@ -1661,6 +1716,11 @@
       }
       if (monty) montyParty(streak);
       else if (newBestStreak) pandaDance();
+      if (attempts === 0) { addXP(10); addCoins(5); } else { addXP(3); addCoins(2); }
+      if (fiver) addCoins(15);
+      if (monty) addCoins(40);
+      checkBadges();
+      updateRewardStrip();
       qnum++;
       setTimeout(nextQuestion, monty ? 3400 : (newBestStreak ? 2600 : 1200));
     } else {
@@ -1919,7 +1979,7 @@
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView].forEach(function (el) { el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView, rewardsView].forEach(function (el) { if (el) el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -1973,6 +2033,7 @@
   document.getElementById('checkBtnQuiz').addEventListener('click', function () { openCheck(quizView); });
   document.getElementById('homeBtn').addEventListener('click', function () {
     montyIdle();
+    updateRewardStrip();
     showView(startView);
   });
   document.getElementById('checkBack').addEventListener('click', function () {
@@ -1987,6 +2048,169 @@
     renderCheck();
     showView(checkView);
   });
+
+  // ===================== Rewards: coins, XP, levels, badges, wardrobe, daily streak =====================
+  var COINS_KEY = 'mathsQuizCoins', COINS_EARNED_KEY = 'mathsQuizCoinsEarned', XP_KEY = 'mathsQuizXP';
+  var WARDROBE_KEY = 'mathsQuizWardrobe', BADGES_KEY = 'mathsQuizBadges', DAYBONUS_KEY = 'mathsQuizDayBonus';
+  var coins = loadJSON(pfx(COINS_KEY), 0);
+  var coinsEarned = loadJSON(pfx(COINS_EARNED_KEY), 0);
+  var xp = loadJSON(pfx(XP_KEY), 0);
+  var wardrobe = loadJSON(pfx(WARDROBE_KEY), { owned: {}, hat: null, acc: null });
+  if (!wardrobe.owned) wardrobe.owned = {};
+  var badges = loadJSON(pfx(BADGES_KEY), {});
+  var rewardsView = document.getElementById('rewardsView');
+
+  function levelFromXP(x) { return Math.floor(x / 100) + 1; }
+  function keyFor(dt) { var m = dt.getMonth() + 1, day = dt.getDate(); return dt.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day; }
+
+  // smile-only Monty panda used for previews and wardrobe thumbnails
+  var MONTY_INNER = '<circle cx="30" cy="32" r="17" fill="#1b2435"/><circle cx="90" cy="32" r="17" fill="#1b2435"/><circle cx="60" cy="64" r="42" fill="#fff"/><ellipse cx="44" cy="60" rx="12" ry="16" fill="#1b2435" transform="rotate(18 44 60)"/><ellipse cx="76" cy="60" rx="12" ry="16" fill="#1b2435" transform="rotate(-18 76 60)"/><circle cx="44" cy="62" r="5.4" fill="#fff"/><circle cx="76" cy="62" r="5.4" fill="#fff"/><circle cx="45" cy="63" r="3.3" fill="#1b2435"/><circle cx="77" cy="63" r="3.3" fill="#1b2435"/><circle cx="34" cy="80" r="6" fill="#e3928b" opacity="0.5"/><circle cx="86" cy="80" r="6" fill="#e3928b" opacity="0.5"/><ellipse cx="60" cy="78" rx="5.4" ry="4" fill="#1b2435"/><path d="M60 84 q-7 9 -13 2 M60 84 q7 9 13 2" fill="none" stroke="#1b2435" stroke-width="2.6" stroke-linecap="round"/>';
+
+  var HATS = [
+    { id: 'party', name: 'Party Hat', cost: 30, svg: '<polygon points="60,3 47,30 73,30" fill="#e3565a"/><polygon points="60,3 47,30 60,30" fill="#f06b6f"/><circle cx="55" cy="15" r="2.3" fill="#fff"/><circle cx="64" cy="23" r="2.3" fill="#fff"/><circle cx="60" cy="3" r="4.5" fill="#f5d36b"/>' },
+    { id: 'wizard', name: 'Wizard Hat', cost: 80, svg: '<polygon points="62,-2 44,32 80,32" fill="#3a4db0"/><polygon points="62,-2 53,32 62,32" fill="#4a5fcf"/><path d="M40 31 q22 8 42 0 l0 4 q-21 8 -42 0 Z" fill="#2c3a8a"/><path d="M58 9 l1.5 4 4.2 .3 -3.2 2.8 1 4.1 -3.5 -2.3 -3.5 2.3 1 -4.1 -3.2 -2.8 4.2 -.3 Z" fill="#f5d36b"/>' },
+    { id: 'crown', name: 'Crown', cost: 120, svg: '<path d="M40 30 L44 12 L52 23 L60 8 L68 23 L76 12 L80 30 Z" fill="#f3c64b" stroke="#d3a82f" stroke-width="2" stroke-linejoin="round"/><circle cx="60" cy="18" r="3" fill="#e3565a"/><circle cx="46" cy="22" r="2.2" fill="#0d9488"/><circle cx="74" cy="22" r="2.2" fill="#0d9488"/>' }
+  ];
+  var ACCS = [
+    { id: 'bowtie', name: 'Bow Tie', cost: 40, svg: '<path d="M55 101 L44 95 L44 107 Z" fill="#d4503f"/><path d="M65 101 L76 95 L76 107 Z" fill="#d4503f"/><rect x="56" y="97" width="8" height="8" rx="2" fill="#b03e30"/>' },
+    { id: 'shades', name: 'Sunglasses', cost: 50, svg: '<rect x="32" y="54" width="22" height="14" rx="6" fill="#1b2435"/><rect x="66" y="54" width="22" height="14" rx="6" fill="#1b2435"/><rect x="53" y="58" width="14" height="3.5" rx="1.5" fill="#1b2435"/><rect x="35" y="57" width="7" height="3" rx="1.5" fill="#6b7b92"/>' },
+    { id: 'scarf', name: 'Scarf', cost: 60, svg: '<path d="M34 96 q26 16 52 0 l-3 11 q-23 13 -46 0 Z" fill="#36884d"/><path d="M74 104 l10 3 -3 14 -8 -3 Z" fill="#2c6b3e"/>' },
+    { id: 'phones', name: 'Headphones', cost: 70, svg: '<path d="M26 44 q34 -38 68 0" fill="none" stroke="#1b2435" stroke-width="6" stroke-linecap="round"/><rect x="20" y="40" width="13" height="20" rx="6" fill="#0075d4"/><rect x="87" y="40" width="13" height="20" rx="6" fill="#0075d4"/>' }
+  ];
+  function outfitById(id) { var all = HATS.concat(ACCS); for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i]; return null; }
+  function isHat(it) { for (var i = 0; i < HATS.length; i++) if (HATS[i].id === it.id) return true; return false; }
+  function equippedHatSVG() { return wardrobe.hat ? outfitById(wardrobe.hat).svg : ''; }
+  function equippedAccSVG() { return wardrobe.acc ? outfitById(wardrobe.acc).svg : ''; }
+  function montySVG(hatSvg, accSvg) { return '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">' + MONTY_INNER + (accSvg || '') + (hatSvg || '') + '</svg>'; }
+  function renderMontyOutfit() {
+    var h = document.getElementById('montyHat'), a = document.getElementById('montyAcc');
+    if (h) h.innerHTML = equippedHatSVG();
+    if (a) a.innerHTML = equippedAccSVG();
+  }
+
+  var toastEl = null, toastTimer = null;
+  function toast(msg) {
+    toastEl = toastEl || document.getElementById('toast');
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
+  }
+
+  function addCoins(n) { coins += n; coinsEarned += n; saveJSON(pfx(COINS_KEY), coins); saveJSON(pfx(COINS_EARNED_KEY), coinsEarned); }
+  function spendCoins(n) { coins = Math.max(0, coins - n); saveJSON(pfx(COINS_KEY), coins); }
+  function addXP(n) {
+    var before = levelFromXP(xp);
+    xp += n; saveJSON(pfx(XP_KEY), xp);
+    var after = levelFromXP(xp);
+    if (after > before) { addCoins(25); toast('⭐ Level ' + after + '! 🪙 +25'); sfx('best'); celebrate(); }
+  }
+  function dayBonus() {
+    var today = todayKey();
+    if (loadJSON(pfx(DAYBONUS_KEY), null) !== today) { saveJSON(pfx(DAYBONUS_KEY), today); addCoins(10); toast('Daily bonus! 🪙 +10'); }
+  }
+
+  function dayStreakCount() {
+    var played = {}; Object.keys(history).forEach(function (k) { played[k] = 1; });
+    var d = new Date(), c = 0;
+    if (!played[keyFor(d)]) d.setDate(d.getDate() - 1);
+    while (played[keyFor(d)]) { c++; d.setDate(d.getDate() - 1); }
+    return c;
+  }
+  function rewardStats() {
+    var ans = 0, cor = 0;
+    Object.keys(history).forEach(function (dk) {
+      OP_ORDER.forEach(function (o) { var c = history[dk][o]; if (c) { cor += c[0]; ans += c[0] + c[1]; } });
+    });
+    var oc = 0;
+    CORE_OPS.forEach(function (o) { if (Object.keys(history).some(function (dk) { return history[dk][o]; })) oc++; });
+    return { correct: cor, answered: ans, bestStreak: bestStreak, level: levelFromXP(xp), opsCount: oc, coinsEarned: coinsEarned, dayStreak: dayStreakCount(), owned: Object.keys(wardrobe.owned).length };
+  }
+
+  var BADGES_DEF = [
+    { id: 'first', icon: '🌟', name: 'First Steps', test: function (s) { return s.correct >= 1; } },
+    { id: 'streak10', icon: '🔥', name: 'On Fire', test: function (s) { return s.bestStreak >= 10; } },
+    { id: 'q50', icon: '🎯', name: 'Fifty Club', test: function (s) { return s.answered >= 50; } },
+    { id: 'q100', icon: '💯', name: 'Centurion', test: function (s) { return s.answered >= 100; } },
+    { id: 'lvl5', icon: '⭐', name: 'Rising Star', test: function (s) { return s.level >= 5; } },
+    { id: 'lvl10', icon: '👑', name: 'Maths Master', test: function (s) { return s.level >= 10; } },
+    { id: 'allops', icon: '🧮', name: 'All-Rounder', test: function (s) { return s.opsCount >= 4; } },
+    { id: 'coins250', icon: '🪙', name: 'Coin Collector', test: function (s) { return s.coinsEarned >= 250; } },
+    { id: 'week', icon: '📅', name: 'Week Warrior', test: function (s) { return s.dayStreak >= 7; } },
+    { id: 'dressed', icon: '🎩', name: 'Dapper Panda', test: function (s) { return s.owned >= 1; } }
+  ];
+  function earnedBadgeCount() { var n = 0; BADGES_DEF.forEach(function (b) { if (badges[b.id]) n++; }); return n; }
+  function checkBadges(silent) {
+    var s = rewardStats(), newly = [];
+    BADGES_DEF.forEach(function (b) { if (!badges[b.id] && b.test(s)) { badges[b.id] = todayKey(); newly.push(b); } });
+    if (newly.length) {
+      saveJSON(pfx(BADGES_KEY), badges);
+      if (!silent) { toast(newly[0].icon + ' Badge: ' + newly[0].name + '!'); sfx('best'); }
+    }
+  }
+
+  function updateRewardStrip() {
+    var el = document.getElementById('rewardStrip'); if (!el) return;
+    var lvl = levelFromXP(xp), into = xp % 100;
+    el.innerHTML =
+      '<span class="rs-pill rs-coins">🪙 ' + coins + '</span>' +
+      '<span class="rs-pill rs-level">Lvl ' + lvl + ' <span class="xp-bar"><span class="xp-fill" style="width:' + into + '%"></span></span></span>' +
+      '<span class="rs-pill rs-flame">🔥 ' + dayStreakCount() + '</span>';
+  }
+
+  function calendarHTML() {
+    var played = {}; Object.keys(history).forEach(function (k) { played[k] = 1; });
+    var out = '', base = new Date();
+    for (var i = 13; i >= 0; i--) {
+      var dt = new Date(); dt.setDate(base.getDate() - i);
+      var k = keyFor(dt);
+      out += '<div class="cal-day' + (played[k] ? ' played' : '') + '"><span class="dnum">' + dt.getDate() + '</span><span>' + (played[k] ? '🔥' : '·') + '</span></div>';
+    }
+    return out;
+  }
+  function wardrobeHTML() {
+    var items = HATS.concat(ACCS), out = '';
+    items.forEach(function (it) {
+      var owned = !!wardrobe.owned[it.id];
+      var equipped = (wardrobe.hat === it.id || wardrobe.acc === it.id);
+      var btn;
+      if (equipped) btn = '<button class="ward-btn owned" data-act="unequip" data-id="' + it.id + '">Wearing ✓</button>';
+      else if (owned) btn = '<button class="ward-btn" data-act="equip" data-id="' + it.id + '">Wear</button>';
+      else btn = '<button class="ward-btn' + (coins < it.cost ? ' locked' : '') + '" data-act="buy" data-id="' + it.id + '">Buy</button>';
+      out += '<div class="ward-item' + (equipped ? ' equipped' : '') + '"><svg class="ward-mini" viewBox="0 0 120 120">' + MONTY_INNER + it.svg + '</svg><div class="ward-info">' + it.name + '<div class="ward-cost">' + (owned ? 'Owned' : ('🪙 ' + it.cost)) + '</div></div>' + btn + '</div>';
+    });
+    return out;
+  }
+  function badgesHTML() {
+    return BADGES_DEF.map(function (b) { var got = !!badges[b.id]; return '<div class="badge ' + (got ? 'earned' : 'locked') + '"><div class="b-icon">' + (got ? b.icon : '🔒') + '</div><div class="b-name">' + b.name + '</div></div>'; }).join('');
+  }
+  function renderRewards() {
+    var lvl = levelFromXP(xp), into = xp % 100, s = rewardStats();
+    var html = '';
+    html += '<div class="rw-section"><div class="rw-level-row"><span class="rs-pill rs-level">Level ' + lvl + '</span><span class="rw-big-bar"><span class="xp-fill" style="width:' + into + '%"></span></span><span class="rs-pill rs-coins">🪙 ' + coins + '</span></div><div class="check-note">' + into + ' / 100 XP to Level ' + (lvl + 1) + '</div></div>';
+    html += '<div class="rw-section"><div class="rw-h">Daily streak 🔥 ' + s.dayStreak + ' day' + (s.dayStreak === 1 ? '' : 's') + '</div><div class="rw-cal">' + calendarHTML() + '</div></div>';
+    html += '<div class="rw-section"><div class="rw-h">Monty’s Wardrobe</div><div class="wardrobe-preview">' + montySVG(equippedHatSVG(), equippedAccSVG()) + '</div><div class="wardrobe">' + wardrobeHTML() + '</div></div>';
+    html += '<div class="rw-section"><div class="rw-h">Badges (' + earnedBadgeCount() + '/' + BADGES_DEF.length + ')</div><div class="badge-grid">' + badgesHTML() + '</div></div>';
+    document.getElementById('rewardsBody').innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('#rewardsBody .ward-btn'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-id'), act = btn.getAttribute('data-act'), it = outfitById(id);
+        if (act === 'buy') { if (coins < it.cost) { toast('Not enough coins — keep playing!'); return; } spendCoins(it.cost); wardrobe.owned[id] = 1; if (isHat(it)) wardrobe.hat = id; else wardrobe.acc = id; sfx('right'); toast('Bought ' + it.name + '!'); }
+        else if (act === 'equip') { if (isHat(it)) wardrobe.hat = id; else wardrobe.acc = id; }
+        else { if (isHat(it)) wardrobe.hat = null; else wardrobe.acc = null; }
+        saveJSON(pfx(WARDROBE_KEY), wardrobe);
+        renderMontyOutfit(); checkBadges(); updateRewardStrip(); renderRewards();
+      });
+    });
+  }
+
+  document.getElementById('rewardsBtn').addEventListener('click', function () { renderRewards(); showView(rewardsView); });
+  document.getElementById('rewardsBack').addEventListener('click', function () { updateRewardStrip(); showView(startView); });
+
+  renderMontyOutfit();
+  checkBadges(true);
+  updateRewardStrip();
 
   // --- three training games, all aimed at the weak spot ---
   var miniTitle = document.getElementById('miniTitle');
