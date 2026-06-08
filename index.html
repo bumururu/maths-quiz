@@ -2443,15 +2443,20 @@
   if (!Array.isArray(friends)) friends = [];
   function myEntry() { return { n: player, l: levelFromXP(xp), x: xp, c: coins, s: bestStreak, d: dayStreakCount() }; }
   function entryScore(e) { return (e.l || 1) * 100000 + (e.s || 0) * 1000 + (e.d || 0) * 10 + (e.x || 0) / 1000; }
-  function encodeEntry(e) { try { return 'MQ-' + btoa(unescape(encodeURIComponent(JSON.stringify(e)))); } catch (_) { return ''; } }
+  // short, readable code: name.level.beststreak.daystreak  (e.g. Barnaby.3.13.2)
+  function cleanName(n) { return (String(n || 'Player').replace(/[.\r\n]/g, ' ').trim().slice(0, 14)) || 'Player'; }
+  function encodeEntry(e) { return cleanName(e.n) + '.' + (e.l || 1) + '.' + (e.s || 0) + '.' + (e.d || 0); }
   function decodeEntry(code) {
     try {
       code = (code || '').trim();
-      if (code.indexOf('MQ-') === 0) code = code.slice(3);
-      var o = JSON.parse(decodeURIComponent(escape(atob(code))));
-      if (o && typeof o.n === 'string') return { n: String(o.n).slice(0, 14), l: +o.l || 1, x: +o.x || 0, c: +o.c || 0, s: +o.s || 0, d: +o.d || 0 };
-    } catch (_) {}
-    return null;
+      if (code.indexOf('MQ-') === 0) code = code.slice(3);   // tolerate an old-style prefix
+      var parts = code.split('.');
+      if (parts.length < 4) return null;
+      var d = +parts.pop(), s = +parts.pop(), l = +parts.pop();
+      var n = parts.join('.').trim();
+      if (!n || isNaN(l) || isNaN(s) || isNaN(d)) return null;
+      return { n: n.slice(0, 14), l: l || 1, s: s || 0, d: d || 0, x: 0, c: 0 };
+    } catch (_) { return null; }
   }
   function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function renderLeaderboard() {
@@ -2459,7 +2464,7 @@
     var rows = [me].concat(friends);
     rows.sort(function (a, b) { return entryScore(b) - entryScore(a); });
     var html = '<div class="rw-section"><div class="rw-h">Your code — share it with a friend</div><div class="lb-coderow"><input id="myCodeInput" class="lb-code" readonly value="' + esc(encodeEntry(myEntry())) + '"><button class="ward-btn" id="copyCodeBtn">Copy</button></div></div>';
-    html += '<div class="rw-section"><div class="rw-h">Add a friend’s code</div><div class="lb-coderow"><input id="friendCodeInput" class="lb-code" placeholder="Paste a code…"><button class="ward-btn" id="addFriendBtn">Add</button></div></div>';
+    html += '<div class="rw-section"><div class="rw-h">Add a friend’s code</div><div class="lb-coderow"><input id="friendCodeInput" class="lb-code" placeholder="e.g. Sam.4.12.3"><button class="ward-btn" id="addFriendBtn">Add</button></div></div>';
     html += '<div class="rw-h">Leaderboard</div><table class="lb-table"><tr><th>#</th><th>Name</th><th>Lvl</th><th>🔥</th><th>📅</th><th></th></tr>';
     rows.forEach(function (e, i) {
       var who = e._me ? esc(e.n) + ' (you)' : esc(e.n);
