@@ -263,6 +263,14 @@
   .lb-table td:nth-child(2), .lb-table th:nth-child(2) { text-align: left; }
   .lb-me td { background: #eaf6ed; }
   .lb-rm { background: none; border: none; color: #c2410c; font-weight: 800; cursor: pointer; font-size: 14px; }
+  /* New modes: Times Tables, Telling the Time, Adventure */
+  .clock-wrap { display: flex; justify-content: center; margin: 4px 0 12px; }
+  .clock-wrap svg { width: 200px; height: 200px; }
+  .table-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0 4px; }
+  .table-grid button { font-family: 'Chango', 'Bree Serif', serif; font-size: 20px; line-height: 1; padding: 12px 0 11px; border: 3px solid #d7e3f0; border-radius: 14px; background: #fff; color: #36884d; cursor: pointer; transition: transform 0.08s, background 0.12s; }
+  .table-grid button:active { transform: scale(0.95); background: #d0ecff; }
+  .adv-map { display: flex; justify-content: center; margin: 2px 0 8px; }
+  .adv-map svg { width: 100%; max-width: 420px; height: auto; }
   /* on-screen number pad */
   .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 230px; margin: 10px auto 0; }
   .keypad button { font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 22px; padding: 11px 0; border: 3px solid #d7e3f0; border-radius: 12px; background: #fff; color: #36884d; cursor: pointer; }
@@ -921,6 +929,11 @@
       <button class="boss-btn" id="bossBtn" type="button">⚔️ Boss Battle</button>
     </div>
     <div class="btn-row">
+      <button class="blue-btn small" id="advBtn" type="button">🗺️ Adventure</button>
+      <button class="blue-btn small" id="timeBtn" type="button">🕐 Telling Time</button>
+      <button class="blue-btn small" id="tablesBtn" type="button">✖️ Times Tables</button>
+    </div>
+    <div class="btn-row">
       <button class="blue-btn small" id="checkBtnStart" type="button">Let's Check!</button>
       <button class="blue-btn small" id="duelBtn" type="button">2-Player Duel</button>
       <button class="blue-btn small" id="leaderboardBtn" type="button">🏆 Leaderboard</button>
@@ -1153,6 +1166,59 @@
     <div id="leaderboardBody"></div>
     <div class="check-actions">
       <button class="back-btn" id="leaderboardBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Times Table Drill screen -->
+  <div id="drillView" class="hidden">
+    <h2 class="check-title">Times Table Drill</h2>
+    <div id="drillPick">
+      <p class="check-note">Pick a table to practise:</p>
+      <div class="table-grid" id="tableGrid"></div>
+    </div>
+    <div id="drillPlay" class="hidden">
+      <div class="mini-progress" id="drillProgress"></div>
+      <div class="question" id="drillQuestion"></div>
+      <div class="answer-row" id="drillRow">
+        <input type="text" id="drillInput" inputmode="numeric" autocomplete="off">
+        <button class="check-btn" id="drillGo" type="button">Go</button>
+      </div>
+      <div class="feedback correct" id="drillFeedback"></div>
+    </div>
+    <div class="check-actions">
+      <button class="blue-btn hidden" id="drillAgain" type="button">Play Again</button>
+      <button class="back-btn" id="drillBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Telling the Time screen -->
+  <div id="clockView" class="hidden">
+    <h2 class="check-title">What's the Time?</h2>
+    <div class="mini-progress" id="clockProgress"></div>
+    <div class="clock-wrap" id="clockFace"></div>
+    <div class="mini-answers" id="clockAnswers"></div>
+    <div class="feedback correct" id="clockFeedback"></div>
+    <div class="check-actions">
+      <button class="blue-btn hidden" id="clockAgain" type="button">Play Again</button>
+      <button class="back-btn" id="clockBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <!-- Adventure Map screen -->
+  <div id="adventureView" class="hidden">
+    <h2 class="check-title">Monty's Adventure</h2>
+    <div class="adv-map" id="advMap"></div>
+    <div class="mini-progress" id="advProgress"></div>
+    <div class="boss-hearts" id="advHearts"></div>
+    <div class="question" id="advQuestion"></div>
+    <div class="answer-row" id="advRow">
+      <input type="text" id="advInput" inputmode="decimal" autocomplete="off">
+      <button class="check-btn" id="advGo" type="button">Go</button>
+    </div>
+    <div class="feedback correct" id="advFeedback"></div>
+    <div class="check-actions">
+      <button class="blue-btn hidden" id="advAgain" type="button">New Adventure</button>
+      <button class="back-btn" id="advBack" type="button">Back</button>
     </div>
   </div>
 </div>
@@ -2227,7 +2293,7 @@
   var returnView = startView;
 
   function showView(v) {
-    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView, rewardsView, bossView, leaderboardView].forEach(function (el) { if (el) el.classList.add('hidden'); });
+    [startView, quizView, checkView, graphView, miniView, playersView, dailyView, duelView, rewardsView, bossView, leaderboardView, drillView, clockView, adventureView].forEach(function (el) { if (el) el.classList.add('hidden'); });
     v.classList.remove('hidden');
     fitToViewport();
   }
@@ -2631,6 +2697,330 @@
   }
   document.getElementById('leaderboardBtn').addEventListener('click', function () { renderLeaderboard(); showView(leaderboardView); });
   document.getElementById('leaderboardBack').addEventListener('click', function () { showView(startView); });
+
+  // ===================== New modes: Times Tables, Telling the Time, Adventure Map =====================
+  var drillView = document.getElementById('drillView');
+  var clockView = document.getElementById('clockView');
+  var adventureView = document.getElementById('adventureView');
+  function nmShuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function nmHearts(lives, max) { var s = ''; for (var i = 0; i < max; i++) s += (i < lives ? '❤️' : '🤍'); return s; }
+
+  // ---------- Times Table Drill ----------
+  var DRILLBEST_KEY = 'mathsQuizDrillBest';
+  var drillBest = loadJSON(pfx(DRILLBEST_KEY), {});
+  if (!drillBest || typeof drillBest !== 'object') drillBest = {};
+  var drill = null;
+  var tableGrid = document.getElementById('tableGrid');
+  var drillPick = document.getElementById('drillPick');
+  var drillPlay = document.getElementById('drillPlay');
+  var drillRow = document.getElementById('drillRow');
+  var drillProgress = document.getElementById('drillProgress');
+  var drillQuestion = document.getElementById('drillQuestion');
+  var drillInput = document.getElementById('drillInput');
+  var drillFeedback = document.getElementById('drillFeedback');
+  var drillAgain = document.getElementById('drillAgain');
+  function renderTablePicker() {
+    tableGrid.innerHTML = '';
+    for (var t = 2; t <= 12; t++) {
+      (function (tbl) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        var best = drillBest[tbl];
+        b.innerHTML = '<div>' + tbl + '×</div>' + (best ? '<div style="font-size:10px;font-family:Nunito,sans-serif;color:#8a6d1f">' + (best / 1000).toFixed(1) + 's</div>' : '');
+        b.addEventListener('click', function () { startDrill(tbl); });
+        tableGrid.appendChild(b);
+      })(t);
+    }
+  }
+  function openDrill() {
+    drill = null;
+    drillPick.classList.remove('hidden');
+    drillPlay.classList.add('hidden');
+    drillAgain.classList.add('hidden');
+    renderTablePicker();
+    showView(drillView);
+  }
+  function startDrill(table) {
+    drill = { table: table, order: nmShuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), idx: 0, right: 0, answer: 0, start: Date.now() };
+    drillPick.classList.add('hidden');
+    drillPlay.classList.remove('hidden');
+    drillRow.classList.remove('hidden');
+    drillAgain.classList.add('hidden');
+    drillFeedback.textContent = '';
+    nextDrill();
+  }
+  function nextDrill() {
+    if (!drill) return;
+    if (drill.idx >= drill.order.length) { endDrill(); return; }
+    var n = drill.order[drill.idx];
+    drill.answer = drill.table * n;
+    drillProgress.textContent = 'Question ' + (drill.idx + 1) + ' of ' + drill.order.length + ' · ' + drill.table + ' times table';
+    drillQuestion.textContent = drill.table + ' × ' + n + ' = ?';
+    drillInput.value = '';
+    drillInput.focus();
+  }
+  function drillCheck() {
+    if (!drill || drill.idx >= drill.order.length) return;
+    var raw = drillInput.value.trim();
+    if (raw === '' || isNaN(Number(raw))) return;
+    if (sameNum(Number(raw), drill.answer)) {
+      drill.right++;
+      sfx('right');
+      drillFeedback.textContent = 'Yes! 🎉';
+      drillFeedback.className = 'feedback correct';
+    } else {
+      sfx('wrong');
+      drillFeedback.textContent = drill.table + ' × ' + drill.order[drill.idx] + ' = ' + drill.answer;
+      drillFeedback.className = 'feedback wrong';
+    }
+    drill.idx++;
+    setTimeout(nextDrill, 650);
+  }
+  function endDrill() {
+    var ms = Date.now() - drill.start;
+    var allRight = drill.right === drill.order.length;
+    var reward = 10 + drill.right * 2;
+    drillRow.classList.add('hidden');
+    drillProgress.textContent = 'Done!';
+    drillQuestion.textContent = drill.right + ' / ' + drill.order.length + ' right';
+    if (allRight) {
+      var prev = drillBest[drill.table];
+      var bestMsg;
+      if (!prev || ms < prev) { drillBest[drill.table] = ms; saveJSON(pfx(DRILLBEST_KEY), drillBest); bestMsg = 'New best time: ' + (ms / 1000).toFixed(1) + 's! '; }
+      else { bestMsg = 'Time: ' + (ms / 1000).toFixed(1) + 's. '; }
+      addCoins(reward); addXP(10); checkBadges(); updateRewardStrip();
+      drillFeedback.textContent = bestMsg + 'All correct! 🪙 +' + reward;
+      drillFeedback.className = 'feedback correct';
+      sfx('fanfare'); celebrate();
+    } else {
+      addCoins(reward); updateRewardStrip();
+      drillFeedback.textContent = 'Good effort! 🪙 +' + reward + '. Try again for full marks!';
+      drillFeedback.className = 'feedback correct';
+      sfx('end');
+    }
+    drillAgain.classList.remove('hidden');
+  }
+  document.getElementById('tablesBtn').addEventListener('click', openDrill);
+  document.getElementById('drillGo').addEventListener('click', drillCheck);
+  drillInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') drillCheck(); });
+  drillInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
+  drillAgain.addEventListener('click', openDrill);
+  document.getElementById('drillBack').addEventListener('click', function () { updateRewardStrip(); showView(startView); });
+
+  // ---------- Telling the Time ----------
+  var CLOCKBEST_KEY = 'mathsQuizClockBest';
+  var clock = null;
+  var clockFace = document.getElementById('clockFace');
+  var clockProgress = document.getElementById('clockProgress');
+  var clockAnswers = document.getElementById('clockAnswers');
+  var clockFeedback = document.getElementById('clockFeedback');
+  var clockAgain = document.getElementById('clockAgain');
+  function clockMinutes() {
+    var lv = (typeof autoOn !== 'undefined' && autoOn) ? 'medium' : level;
+    if (lv === 'easy') return [0, 30];
+    if (lv === 'hard') return [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+    return [0, 15, 30, 45];
+  }
+  function fmtTime(h, m) { return h + ':' + (m < 10 ? '0' : '') + m; }
+  function clockSVG(h, m) {
+    var cx = 100, cy = 100, r = 92, i, a, ticks = '', nums = '';
+    for (i = 0; i < 12; i++) {
+      a = i * 30 * Math.PI / 180;
+      ticks += '<line x1="' + (cx + Math.sin(a) * (r - 6)).toFixed(1) + '" y1="' + (cy - Math.cos(a) * (r - 6)).toFixed(1) +
+        '" x2="' + (cx + Math.sin(a) * (r - 16)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 16)).toFixed(1) +
+        '" stroke="#1b2435" stroke-width="3" stroke-linecap="round"/>';
+    }
+    for (i = 1; i <= 12; i++) {
+      a = i * 30 * Math.PI / 180;
+      nums += '<text x="' + (cx + Math.sin(a) * (r - 30)).toFixed(1) + '" y="' + (cy - Math.cos(a) * (r - 30) + 6).toFixed(1) +
+        '" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="16" fill="#36884d">' + i + '</text>';
+    }
+    var ha = ((h % 12) + m / 60) * 30 * Math.PI / 180, ma = m * 6 * Math.PI / 180;
+    return '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="100" cy="100" r="92" fill="#fff" stroke="#0075d4" stroke-width="6"/>' + ticks + nums +
+      '<line x1="100" y1="100" x2="' + (cx + Math.sin(ha) * 46).toFixed(1) + '" y2="' + (cy - Math.cos(ha) * 46).toFixed(1) + '" stroke="#1b2435" stroke-width="7" stroke-linecap="round"/>' +
+      '<line x1="100" y1="100" x2="' + (cx + Math.sin(ma) * 66).toFixed(1) + '" y2="' + (cy - Math.cos(ma) * 66).toFixed(1) + '" stroke="#c2410c" stroke-width="5" stroke-linecap="round"/>' +
+      '<circle cx="100" cy="100" r="6" fill="#1b2435"/></svg>';
+  }
+  function openClock() {
+    clock = { idx: 0, right: 0, total: 10, answer: '', locked: false };
+    clockAgain.classList.add('hidden');
+    clockFeedback.textContent = '';
+    showView(clockView);
+    nextClock();
+  }
+  function nextClock() {
+    if (!clock) return;
+    if (clock.idx >= clock.total) { endClock(); return; }
+    clock.locked = false;
+    clockProgress.textContent = 'Clock ' + (clock.idx + 1) + ' of ' + clock.total;
+    clockFeedback.textContent = '';
+    var mins = clockMinutes();
+    var h = 1 + ((Math.random() * 12) | 0);
+    var m = mins[(Math.random() * mins.length) | 0];
+    clock.answer = fmtTime(h, m);
+    var opts = [clock.answer], guard = 0;
+    while (opts.length < 4 && guard++ < 60) {
+      var dh = h, dm = m, rr = Math.random();
+      if (rr < 0.4) dh = 1 + ((Math.random() * 12) | 0);
+      else if (rr < 0.7) dm = mins[(Math.random() * mins.length) | 0];
+      else { dh = 1 + ((Math.random() * 12) | 0); dm = mins[(Math.random() * mins.length) | 0]; }
+      var cand = fmtTime(dh, dm);
+      if (opts.indexOf(cand) < 0) opts.push(cand);
+    }
+    clockFace.innerHTML = clockSVG(h, m);
+    opts = nmShuffle(opts);
+    clockAnswers.innerHTML = '';
+    opts.forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mini-ans';
+      b.textContent = o;
+      b.addEventListener('click', function () { clockPick(b, o); });
+      clockAnswers.appendChild(b);
+    });
+  }
+  function clockPick(btn, val) {
+    if (!clock || clock.locked) return;
+    clock.locked = true;
+    if (val === clock.answer) {
+      clock.right++;
+      btn.classList.add('right');
+      sfx('right');
+      clockFeedback.textContent = 'Correct! 🎉';
+      clockFeedback.className = 'feedback correct';
+    } else {
+      btn.classList.add('wrongpick');
+      sfx('wrong');
+      Array.prototype.forEach.call(clockAnswers.children, function (c) { if (c.textContent === clock.answer) c.classList.add('right'); });
+      clockFeedback.textContent = 'It was ' + clock.answer;
+      clockFeedback.className = 'feedback wrong';
+    }
+    clock.idx++;
+    setTimeout(nextClock, 1000);
+  }
+  function endClock() {
+    var reward = 8 + clock.right * 2;
+    clockProgress.textContent = 'Done!';
+    clockFace.innerHTML = '';
+    clockAnswers.innerHTML = '';
+    addCoins(reward);
+    if (clock.right >= 8) { addXP(10); sfx('fanfare'); celebrate(); } else { sfx('end'); }
+    checkBadges(); updateRewardStrip();
+    var prev = loadJSON(pfx(CLOCKBEST_KEY), 0), bestMsg = '';
+    if (clock.right > prev) { saveJSON(pfx(CLOCKBEST_KEY), clock.right); bestMsg = ' New best!'; }
+    clockFeedback.textContent = 'You got ' + clock.right + ' / ' + clock.total + ' right. 🪙 +' + reward + '.' + bestMsg;
+    clockFeedback.className = 'feedback correct';
+    clockAgain.classList.remove('hidden');
+  }
+  document.getElementById('timeBtn').addEventListener('click', openClock);
+  clockAgain.addEventListener('click', openClock);
+  document.getElementById('clockBack').addEventListener('click', function () { updateRewardStrip(); showView(startView); });
+
+  // ---------- Adventure Map ----------
+  var adv = null;
+  var advMap = document.getElementById('advMap');
+  var advProgress = document.getElementById('advProgress');
+  var advHearts = document.getElementById('advHearts');
+  var advQuestion = document.getElementById('advQuestion');
+  var advRow = document.getElementById('advRow');
+  var advInput = document.getElementById('advInput');
+  var advFeedback = document.getElementById('advFeedback');
+  var advAgain = document.getElementById('advAgain');
+  function advMapSVG(step, total) {
+    var w = 420, h = 120, pad = 32, i, pts = [];
+    for (i = 0; i <= total; i++) pts.push([pad + (w - 2 * pad) * (i / total), h / 2 + Math.sin(i * 0.95) * 28]);
+    var d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    for (i = 1; i < pts.length; i++) d += ' L' + pts[i][0].toFixed(1) + ' ' + pts[i][1].toFixed(1);
+    var stones = '';
+    for (i = 0; i <= total; i++) {
+      var done = i < step, here = i === step, isEnd = i === total;
+      var fill = isEnd ? '#d3b465' : (done ? '#36884d' : (here ? '#0075d4' : '#cfe3d6'));
+      stones += '<circle cx="' + pts[i][0].toFixed(1) + '" cy="' + pts[i][1].toFixed(1) + '" r="' + (isEnd ? 15 : 11) + '" fill="' + fill + '"/>';
+      if (isEnd) stones += '<text x="' + pts[i][0].toFixed(1) + '" y="' + (pts[i][1] + 6).toFixed(1) + '" text-anchor="middle" font-size="17">🏆</text>';
+    }
+    var mp = pts[Math.min(step, total)];
+    var token = '<g transform="translate(' + (mp[0] - 15).toFixed(1) + ',' + (mp[1] - 34).toFixed(1) + ')"><svg width="30" height="30" viewBox="0 0 120 120">' + MONTY_INNER + '</svg></g>';
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="' + d + '" fill="none" stroke="#9bd0a8" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 12"/>' + stones + token + '</svg>';
+  }
+  function fmtAdvAns(q) { return (q.ops && q.ops.indexOf('£') >= 0) ? '£' + q.answer.toFixed(2) : String(q.answer); }
+  function advNextQ() {
+    var q;
+    try { q = genQuestion(); } catch (e) { q = null; }
+    if (!q || typeof q.answer !== 'number' || isNaN(q.answer)) {
+      var a = 2 + ((Math.random() * 9) | 0), b = 2 + ((Math.random() * 9) | 0);
+      q = { text: a + ' + ' + b, answer: a + b, ops: ['+'] };
+    }
+    adv.q = q;
+    advQuestion.textContent = qText(q.text);
+    advInput.value = '';
+    advInput.focus();
+  }
+  function renderAdv() {
+    advMap.innerHTML = advMapSVG(adv.step, adv.total);
+    advProgress.textContent = 'Step ' + adv.step + ' of ' + adv.total;
+    advHearts.textContent = nmHearts(adv.lives, adv.maxLives);
+  }
+  function openAdventure() {
+    adv = { step: 0, total: 8, lives: 3, maxLives: 3, active: true, q: null };
+    advAgain.classList.add('hidden');
+    advRow.classList.remove('hidden');
+    advFeedback.textContent = '';
+    advQuestion.textContent = '';
+    showView(adventureView);
+    renderAdv();
+    advNextQ();
+  }
+  function advCheck() {
+    if (!adv || !adv.active) return;
+    var raw = advInput.value.trim();
+    if (raw === '' || isNaN(Number(raw))) return;
+    if (sameNum(Number(raw), adv.q.answer)) {
+      adv.step++;
+      sfx('right'); celebrate();
+      renderAdv();
+      if (adv.step >= adv.total) { advWin(); return; }
+      advFeedback.textContent = 'Onwards! 🎉';
+      advFeedback.className = 'feedback correct';
+      setTimeout(advNextQ, 650);
+    } else {
+      adv.lives--;
+      sfx('wrong'); sadMoment();
+      renderAdv();
+      advFeedback.textContent = 'Not quite — it was ' + fmtAdvAns(adv.q);
+      advFeedback.className = 'feedback wrong';
+      if (adv.lives <= 0) { advLose(); return; }
+      setTimeout(advNextQ, 950);
+    }
+  }
+  function advWin() {
+    adv.active = false;
+    advRow.classList.add('hidden');
+    advProgress.textContent = 'You reached the treasure!';
+    advQuestion.textContent = 'Monty found the treasure! 🏆';
+    addCoins(50); addXP(25); checkBadges(); updateRewardStrip();
+    advFeedback.textContent = 'Adventure complete! 🪙 +50 and 25 XP!';
+    advFeedback.className = 'feedback correct';
+    sfx('fanfare'); celebrate(); pandaDance();
+    advAgain.classList.remove('hidden');
+  }
+  function advLose() {
+    adv.active = false;
+    advRow.classList.add('hidden');
+    advProgress.textContent = 'Out of hearts!';
+    advQuestion.textContent = 'Monty needs a rest — try the adventure again!';
+    advFeedback.textContent = 'You reached step ' + adv.step + '. Have another go!';
+    advFeedback.className = 'feedback wrong';
+    sfx('end');
+    advAgain.classList.remove('hidden');
+  }
+  document.getElementById('advBtn').addEventListener('click', openAdventure);
+  document.getElementById('advGo').addEventListener('click', advCheck);
+  advInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') advCheck(); });
+  advInput.addEventListener('focus', function () { setTimeout(fitToViewport, 350); });
+  advAgain.addEventListener('click', openAdventure);
+  document.getElementById('advBack').addEventListener('click', function () { updateRewardStrip(); showView(startView); });
 
   // --- three training games, all aimed at the weak spot ---
   var miniTitle = document.getElementById('miniTitle');
